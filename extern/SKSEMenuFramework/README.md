@@ -8,7 +8,7 @@
 export，所以是動態連結，符合 LGPL。
 
 **為何 vendored 而非 build 時下載**：本 repo 的離線機必須能 build（見
-[dev-env.md](../../../../workflows/dev-env.md)），`file(DOWNLOAD)` 會破壞這一點。
+[dev-env.md](../../../ModForge/workflows/dev-env.md)），`file(DOWNLOAD)` 會破壞這一點。
 
 **更新方式**：從 upstream 重抓同一個檔，更新上面的 commit 雜湊。header 自足
 （只要 `windows.h` + std，不依賴 CommonLibSSE），沒有其他同步負擔。

@@ -1,13 +1,15 @@
 # scene-capture-bridge — 遊戲內採集橋 SKSE DLL（Idea #24 元件③）
 
-← [sub_projs](../README.md)｜契約權威：[ingame-scene-export-design.md](../../workflows/specs/ingame-scene-export-design.md)｜idea：[#24 遊戲內編輯器](../../workflows/idea/tools/24-ingame-editor.md)
+← 契約權威：[ingame-scene-export-design.md](../ModForge/workflows/specs/ingame-scene-export-design.md)｜idea：[#24 遊戲內編輯器](../ModForge/workflows/idea/tools/24-ingame-editor.md)
+
+> **獨立 repo**（2026-08-02 自 ModForge `sub_projs/scene-capture-bridge` 抽出，未帶舊 commit 歷史）。文中 `../ModForge/…` 這類連結，前提是兩個 repo **同層 clone 在同一個父目錄下**（本機為 `~/repo/moddings/skyrim/projects/`）。
 
 **唯一 net-new 的重工程**：一支 SKSE C++ DLL，在遊戲內走訪目標 cell 的 placed refs、讀每個 base + world transform + enable state、把 runtime FormID 反解成耐久 `<plugin>:0xLOCALID`，序列化成 **scene.json** → 餵 ModForge（`dotnet run -- build scene.json`）生成 patch esp。
 
 - **類型**：基石聯動（它的 output 契約 = ModForge 的 input；兩者靠 scene.json 協議接，不整合）
-- **契約權威**：scene.json 的每個欄位對映**既有 ModForge spec 型別**，本子專案**只擁有 output 形狀**，生成端全在 ModForge。契約定義見 [spec §契約](../../workflows/specs/ingame-scene-export-design.md)。
+- **契約權威**：scene.json 的每個欄位對映**既有 ModForge spec 型別**，本 repo **只擁有 output 形狀**，生成端全在 ModForge。契約定義見 [spec §契約](../ModForge/workflows/specs/ingame-scene-export-design.md)。
 - **建置**：[BUILD.md](BUILD.md)（C++23 + CommonLibSSE-NG + vcpkg + CMake presets；靜態 CRT standalone DLL）
-- **狀態**：✅ **P1–P3 主線實機全過**（2026-07-11；前情 M4 spike＋P1 marker 閉環 2026-07-10）；**P5 模式制已實作待實機**（同日）——`sc` console 指令＋每模式鍵位＋SKSE co-save，**F 直達鍵全數移除**。面板：F1 → `Scene Capture Bridge`。驗收明細見 [landed/world.md](../../workflows/feature-dev/landed/world.md)；殘項見 [wait_todo/ingame-tests.md](../../wait_todo/ingame-tests.md)。
+- **狀態**：✅ **P1–P3 主線實機全過**（2026-07-11；前情 M4 spike＋P1 marker 閉環 2026-07-10）；**P5 模式制已實作待實機**（同日）——`sc` console 指令＋每模式鍵位＋SKSE co-save，**F 直達鍵全數移除**。面板：F1 → `Scene Capture Bridge`。驗收明細見 [landed/world.md](../ModForge/workflows/feature-dev/landed/world.md)；殘項見 [wait_todo/ingame-tests.md](../ModForge/wait_todo/ingame-tests.md)。
 
 ## 建置架構來源
 
@@ -63,7 +65,7 @@ sc refc [Label]            命名 console 滑鼠點選的 ref（aim-free）
 
 **`sc capp` ＝直接吸玩家（2026-07-12，去 PROTEUS 化）**：引擎把玩家的 chargen 寫在 base TESNPC（`Skyrim.esm:0x000007`）上，DLL 直讀同一處即可，**不必經 PROTEUS clone**（clone 自報 level 1／50-50-50、不寫 tintLayers、outfit 是空殼）。順帶所有 actor 的擷取都改帶**顯式數值**：H/M/S ＋ 18 技能（引擎 AV 6..23，＝Mutagen `Skill` 序）→ ModForge 直接寫 DNAM、**不開 autoCalcStats**（autocalc 只是拿 class+level 估算，載入時還會覆蓋掉）。玩家 perk 讀 `PlayerCharacter::addedPerks`（玩家 base 的 perk array 是空的）。
 
-**`[Label]` ＝身份標籤，大小寫保留**（`sc` 的參數解析會全轉小寫——label 走未 `Lower()` 的 raw 參數）。匯出成 `editorId: "MFCap_<label>"`，ModForge 的「顯式 editorId 優先」規則讓同一個 label 永遠對應同一筆記錄（再吸一次＝更新同一個人，不會多生一個）。計畫全文：[plans/player-capture-capp.md](../../workflows/plans/player-capture-capp.md)。
+**`[Label]` ＝身份標籤，大小寫保留**（`sc` 的參數解析會全轉小寫——label 走未 `Lower()` 的 raw 參數）。匯出成 `editorId: "MFCap_<label>"`，ModForge 的「顯式 editorId 優先」規則讓同一個 label 永遠對應同一筆記錄（再吸一次＝更新同一個人，不會多生一個）。計畫全文：[plans/player-capture-capp.md](../ModForge/workflows/plans/player-capture-capp.md)。
 
 **`sc ref` ＝ referrer：命名一個既有 ref（2026-07-12，DLL 端補齊；ModForge 消費端 `adc419b` 已在）**。三兄弟並列——`removals[]` **擦掉**既有、`overrides[]` **移動**既有、`references[]` **命名**既有。referrer **什麼都不動**（不新建、不改 transform、不 disable），只記「這個 ref 的身份 ＋ 一個自由 label」，匯出成頂層 `references[]`；ModForge 把 **label 註冊成可解析的名字**，於是 spec 裡**任何 ref 欄位**都能寫它（package 的 `sandbox.location`／`travel.place`、quest alias `forced:`、`linkedRefs`、`enableParent`、objective target、script Form prop）。典型用法：指一張椅子標「sofia's chair」→ Sofia 的 sandbox package 就錨在那張椅子。
 
@@ -105,7 +107,7 @@ Export 頁有 **Export player cell**、**Export all (loaded cells)**、**Export 
 
 ### Export requires — 「這個 esp 會需要哪些 mod？」在**遊戲內**就問得到
 
-`sc capp` 吸一個玩家分身，就會把「給過你法術/perk/裝備的每一個 mod」變成 esp 的 **master**；缺 master 時 Skyrim **靜默不載**這個 esp（不報錯、log 也沒有，記錄就是不在）。ModForge C# 端 build 完會印同一份分析（＋`<plugin>.requires.txt` 旁檔，[Generator.Dependencies.cs](../../src/ModForge.Core/Generator.Dependencies.cs)）——但**那時你已經退出遊戲了**。這顆鈕把同一個問題**提前到匯出當下**：你人還站在那間房，覺得那顆 PROTEUS 法術不值得讓整個 mod 變成硬相依，重吸一次就好。
+`sc capp` 吸一個玩家分身，就會把「給過你法術/perk/裝備的每一個 mod」變成 esp 的 **master**；缺 master 時 Skyrim **靜默不載**這個 esp（不報錯、log 也沒有，記錄就是不在）。ModForge C# 端 build 完會印同一份分析（＋`<plugin>.requires.txt` 旁檔，[Generator.Dependencies.cs](../ModForge/src/ModForge.Core/Generator.Dependencies.cs)）——但**那時你已經退出遊戲了**。這顆鈕把同一個問題**提前到匯出當下**：你人還站在那間房，覺得那顆 PROTEUS 法術不值得讓整個 mod 變成硬相依，重吸一次就好。
 
 **不過濾任何東西**（完全複製優先＝使用者拍板），只是讓代價**可見**。掃描範圍＝DLL 手上會進匯出的全部：`placements[]`（base／cell／worldspace）、`removals[]`、`overrides[]`、`references[]`、`annotations[]`、整本 Captures 登記簿。判定規則與 C# 端**同一套**：vanilla ＝ Skyrim/Update/Dawnguard/HearthFires/Dragonborn **五個**；**CC（`ccXxxSSE###` / `_ResourcePack`）不算 vanilla**（按帳號綁定，沒買的人一樣靜默不載，只是報告會標原因）。
 
@@ -165,7 +167,7 @@ referrer = F11
 | `UI.Settings.cpp` | Settings 頁：模式切換鈕、**每模式鍵位（唯讀顯示＋標來源 `(ini)`／`(save / default)`）＋ `reload keys from ini` 鈕**、編輯步長、marker 光球開關；`UI::ModeLine()` 各頁頂部常駐當前模式 |
 | `UI.Fields.{h,cpp}` | **一個 bound text field，各頁的可編輯列共用**：修 2026-07-13 實機發現的「面板 buffer 與 registry 靜默分叉」（打了新名字沒按 Enter 就點開別的地方，registry 還是舊值，面板卻永遠畫著新值）。RULE 1——buffer 只有在那一格正被打字時才准跟 registry 不同，其餘每一幀都從 entry 重新種（靠 ImGui「同時只有一個 active item」的不變量）；RULE 2——Enter **或** deactivate-after-edit（點開別處）都會 commit。連帶讓 `g_rows.erase(seq)` / `g_slotBufs.clear()` 這類手動 buffer 失效呼叫全部消失（列會自癒）——唯一例外是 Palette（插槽用**索引**定位、沒有 seq），列表重排時要呼叫 `UI::ForgetEdits()` |
 | `SceneExporter.{h,cpp}` | **核心**：`ExportCell` 走訪 cell → **vanilla diff**（ref 解得出耐久 id ⇒ 既有 ⇒ 跳過；解不出 ⇒ 玩家 `PlaceAtMe` 擺的 ⇒ emit）→ `placements[]`（**只有物件**：actor 掃描時排除，2026-07-12 拍板）；`ExportCaptures` 另出 captures 檔；`ResolveDurableId` FormID→`<plugin>:0xLOCALID`；`WriteSceneFile` 吐 json（檔名帶場景＋時間戳） |
-| `UI.{h,cpp}` | 遊戲內面板（[SKSE Menu Framework 3](../mod-survey/findings/skse-menu-framework-3.md) / Dear ImGui）：顯示所在 cell、Export 按鈕、上次匯出統計；Eraser/Palette/Editor/Markers 各頁帶 **this cell only 過濾**與逐列 undo/revert/del。**2026-07-12 清掉「按一下就執行世界動作」的按鈕**（place marker here／erase by ray／pick by ray／capture crosshair・by ray／select by ray／cancel (restore)）——這批動作全走 `sc` console 指令＋每模式動作鍵（P5 之後 UI 觸發是多餘的），面板只留設定/檢視/清單類。**軟相依**——`IsInstalled()` 是 `GetModuleHandleW` 探測，沒裝框架就只有 hotkey。Palette 頁的插槽改名欄改用 `UI.Fields` 的 bound field（Enter／點開別處都會 commit）。**Eraser／Captures／Editor-overrides／Palette 四頁現在每列都有 label＋note 的 bound field＋apply 鈕**（同樣走 `UI.Fields`）；Eraser／Overrides 兩頁的列改用**耐久 id 的 hash** 定位（不用 list 位置），上面一列 undo/revert 不會把下面列的欄位錯位到別筆 entry |
+| `UI.{h,cpp}` | 遊戲內面板（[SKSE Menu Framework 3](../ModForge/sub_projs/mod-survey/findings/skse-menu-framework-3.md) / Dear ImGui）：顯示所在 cell、Export 按鈕、上次匯出統計；Eraser/Palette/Editor/Markers 各頁帶 **this cell only 過濾**與逐列 undo/revert/del。**2026-07-12 清掉「按一下就執行世界動作」的按鈕**（place marker here／erase by ray／pick by ray／capture crosshair・by ray／select by ray／cancel (restore)）——這批動作全走 `sc` console 指令＋每模式動作鍵（P5 之後 UI 觸發是多餘的），面板只留設定/檢視/清單類。**軟相依**——`IsInstalled()` 是 `GetModuleHandleW` 探測，沒裝框架就只有 hotkey。Palette 頁的插槽改名欄改用 `UI.Fields` 的 bound field（Enter／點開別處都會 commit）。**Eraser／Captures／Editor-overrides／Palette 四頁現在每列都有 label＋note 的 bound field＋apply 鈕**（同樣走 `UI.Fields`）；Eraser／Overrides 兩頁的列改用**耐久 id 的 hash** 定位（不用 list 位置），上面一列 undo/revert 不會把下面列的欄位錯位到別筆 entry |
 | `UI.Markers.cpp` | Markers 頁（this-cell 過濾、每列 `edit` 鈕）＋ **marker 編輯視窗**（E 按 marker 開啟：label／kind／**note 多行**／delete；`AddWindow` 獨立視窗，開著會暫停遊戲收輸入）。Markers 頁列上的 label／kind 欄改用 `UI.Fields` 的 bound field（Enter／點開別處都會 commit）；編輯視窗本身有明確 save／cancel 鈕，維持原樣不受影響 |
 | `extern/SKSEMenuFramework/` | vendored 消費者 header（LGPL-2.1，`GetProcAddress` shim，不連結 DLL）|
 | `Aim.{h,cpp}` | 共用視角射線＋**兩種選取入口**：`CrosshairRef()`（互動準星，老手感）與 `RayRef()`（物理射線→反查 ref，樹/純裝飾 static 用）。**射線絕不做自動 fallback**（使用者拍板 2026-07-11）——牆/地板都是 ref，自動 fallback 會把「按空」變誤抓；射線只走明示按鈕/專用鍵 |
@@ -178,12 +180,12 @@ referrer = F11
 | `Referrer.{h,cpp}` | referrer（`sc ref` / `sc refc`）：**命名**一個既有 ref——只記身份＋label，**世界完全不動**（與 Eraser 的唯一差別）→ 匯出頂層 `references[]`。(乙) 檔內目標（我們 `sc pl` 擺的 dynamic ref）identity ＝ **handle**，匯出時給該 placement 蓋 `EditorIdOf()` ＝ `MFRef_<label>_<seq>`；(甲) 外部 authored ref 記耐久 id。拒收 marker proxy／自家 actor／重複 label。co-save `'RFRR'`；`ReacquireOrphans()` 讀檔按 base+座標撿回檔內目標 |
 | `UI.References.cpp` | References 頁（最新在前、label/note 改名＋擋撞名、顯示檔內 editorId／耐久 id／base／cell／座標、逐列刪除）。label／note 欄改用 `UI.Fields` 的 bound field（Enter／點開別處都會 commit）；撞名被拒的改名現在會**視覺上彈回**已存的 label，而不是繼續顯示被拒的文字 |
 | `Overrides.{h,cpp}` | authored ref 被編輯 commit 後的登記簿（比照 Eraser：明示、不 diff——havok 噪音）→ 匯出頂層 `overrides[]`（ref/position/rotation°/scale；actor 不帶 scale）；Editor 面板頁逐筆/全部 revert 回 baseline。entry 現帶 **label／note**（`SetLabel`/`SetNote`，鍵入耐久 id），同一 ref 重編會保留（跟保留 baseline 一樣）|
-| `Requires.{h,cpp}` | **「這個 esp 會需要哪些 mod？」＝ Export 頁 `Export requires` 鈕**（→ `requires_<stamp>.txt`）。走訪**匯出後的 json**（`SceneExporter::ScanAll`/`ScanCaptures`＝匯出減掉寫檔與統計副作用），收集每個 `<plugin>:0xLOCALID` 及其 JSON 路徑 → 依規則表分成「真的會 link」／`[template clone]`／`[named only]`／**排除**（`activeEffects`、`capturedNpcs[].base`、被蓋掉的 `defaultOutfit`、ingredient 的 `base`、`annotations[]` 的 cell、`references[]` 的 base/cell/ws）。vanilla/CC 判定與 [Generator.Dependencies.cs](../../src/ModForge.Core/Generator.Dependencies.cs) **同一套，改一邊要改兩邊**。`Analyze(scene, captures)` 是**純函式**（不碰遊戲狀態）——刻意拆出來，這樣才驗得到 |
+| `Requires.{h,cpp}` | **「這個 esp 會需要哪些 mod？」＝ Export 頁 `Export requires` 鈕**（→ `requires_<stamp>.txt`）。走訪**匯出後的 json**（`SceneExporter::ScanAll`/`ScanCaptures`＝匯出減掉寫檔與統計副作用），收集每個 `<plugin>:0xLOCALID` 及其 JSON 路徑 → 依規則表分成「真的會 link」／`[template clone]`／`[named only]`／**排除**（`activeEffects`、`capturedNpcs[].base`、被蓋掉的 `defaultOutfit`、ingredient 的 `base`、`annotations[]` 的 cell、`references[]` 的 base/cell/ws）。vanilla/CC 判定與 [Generator.Dependencies.cs](../ModForge/src/ModForge.Core/Generator.Dependencies.cs) **同一套，改一邊要改兩邊**。`Analyze(scene, captures)` 是**純函式**（不碰遊戲狀態）——刻意拆出來，這樣才驗得到 |
 | `PCH.h` / `log.h` | CommonLibSSE PCH（含 nlohmann）＋ spdlog file logger |
 
 ## 尚未做（依 spec 里程碑）
 
-- **PROTEUS clone 的 ref 是 dynamic**：`npcRoles[].actorRef` 需要耐久 ref id，dynamic ref 沒有。PROTEUS 已降為**可選**（預設走 ModForge 直接生的「大眾臉」NPC，ref 耐久），故不阻塞；見 [spec](../../workflows/specs/ingame-scene-export-design.md)「NPC 來源」。
+- **PROTEUS clone 的 ref 是 dynamic**：`npcRoles[].actorRef` 需要耐久 ref id，dynamic ref 沒有。PROTEUS 已降為**可選**（預設走 ModForge 直接生的「大眾臉」NPC，ref 耐久），故不阻塞；見 [spec](../ModForge/workflows/specs/ingame-scene-export-design.md)「NPC 來源」。
 - **§B 語意標記 / §D role tag / §E 滴管·範圍吸取·橡皮擦**：UI 骨架（`src/UI.cpp`）已接上 SKSE Menu Framework，剩下的是把這些工具畫進面板。
 
 ## 使用流程：marker → agent → 世界改變（P1，實機閉環 2026-07-10）
@@ -237,4 +239,4 @@ DLL 有兩層狀態，**P5 起兩層都隨存檔走**：
 
 ## 里程碑對位（spec §最小垂直切片）
 
-本子專案負責 **M4（採集橋 spike）→ M6**。M0–M2（ModForge 側 `SceneImport` + `SceneNpcRoleSpec`，手寫 scene.json 即可驗）是 ModForge 本命工作、離線可測，**不依賴本 DLL**——兩線並行。
+本 repo負責 **M4（採集橋 spike）→ M6**。M0–M2（ModForge 側 `SceneImport` + `SceneNpcRoleSpec`，手寫 scene.json 即可驗）是 ModForge 本命工作、離線可測，**不依賴本 DLL**——兩線並行。

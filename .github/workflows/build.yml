@@ -2,14 +2,10 @@ name: Build
 
 on:
   push:
-    paths: ['sub_projs/scene-capture-bridge/**']
+    paths: ['src/**', 'cmake/**', 'ports/**', 'scripts/**', 'extern/**', 'CMakeLists.txt', 'CMakePresets.json', 'vcpkg*.json', '.github/workflows/build.yml']
   pull_request:
-    paths: ['sub_projs/scene-capture-bridge/**']
+    paths: ['src/**', 'cmake/**', 'ports/**', 'scripts/**', 'extern/**', 'CMakeLists.txt', 'CMakePresets.json', 'vcpkg*.json', '.github/workflows/build.yml']
   workflow_dispatch:
-
-defaults:
-  run:
-    working-directory: sub_projs/scene-capture-bridge
 
 jobs:
   build:
@@ -39,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.VCPKG_BINARY_CACHE_DIR }}
-          key: scb-vcpkg-${{ runner.os }}-${{ hashFiles('sub_projs/scene-capture-bridge/vcpkg.json', 'sub_projs/scene-capture-bridge/vcpkg-configuration.json', 'sub_projs/scene-capture-bridge/cmake/x64-windows-skse.cmake') }}
+          key: scb-vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'cmake/x64-windows-skse.cmake') }}
           restore-keys: scb-vcpkg-${{ runner.os }}-
 
       - name: Configure
@@ -65,12 +61,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SceneCaptureBridge-dll
-          path: sub_projs/scene-capture-bridge/build/release-msvc/SceneCaptureBridge.dll
+          path: build/release-msvc/SceneCaptureBridge.dll
           if-no-files-found: error
 
       - name: Upload MO2-installable zip
         uses: actions/upload-artifact@v4
         with:
           name: SceneCaptureBridge-mo2-zip
-          path: sub_projs/scene-capture-bridge/dist/*.zip
+          path: dist/*.zip
           if-no-files-found: error
