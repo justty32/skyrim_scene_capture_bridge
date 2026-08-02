@@ -1,0 +1,8 @@
+{
+  "_comment": "Editor tooling esp (NOT a shipped product) — built by ModForge itself (dogfood). SCB_MarkerACTI is the visible marker proxy the DLL PlaceObjectAtMe's: model = iron dagger (Weapons\\Iron\\IronDagger.nif, verified via houseCARL against WEAP 01397E). A dagger because its TIP visualises the marker's recorded orientation (the DLL now records + edits full rotation + scale, not just a Z angle). It has weapon clutter havok that would fall, so the DLL freezes each proxy on placement (SetMotionType kKeyframed). The DLL looks this up as SceneCaptureTools.esp:0x800 and falls back to the vanilla summon-circle activator when this esp is absent (no collision -> hotkeys only, no E). Rebuild: dotnet run --project src/ModForge.Cli -- build sub_projs/scene-capture-bridge/tools-spec.json <out>/SceneCaptureTools.esp",
+  "pluginName": "SceneCaptureTools.esp",
+  "esl": true,
+  "activators": [
+    { "editorId": "SCB_MarkerACTI", "name": "SCB Marker", "model": "Weapons\\Iron\\IronDagger.nif" }
+  ]
+}

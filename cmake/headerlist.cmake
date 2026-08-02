@@ -1,0 +1,24 @@
+set(headers ${headers}
+    src/PCH.h
+    src/log.h
+    src/Aim.h
+    src/Editor.h
+    src/Eraser.h
+    src/Markers.h
+    src/Overrides.h
+    src/Captures.h
+    src/Palette.h
+    src/Catalog.h
+    src/Numpad.h
+    src/Preview.h
+    src/Physics.h
+    src/Referrer.h
+    src/Requires.h
+    src/SceneExporter.h
+    src/UI.h
+    src/UI.Fields.h
+    src/Modes.h
+    src/KeyIni.h
+    src/Console.h
+    src/CoSave.h
+)
