@@ -15,8 +15,7 @@
 
 改編自 [justty32/my_skyrim_plugin_1](https://github.com/justty32/my_skyrim_plugin_1) 的**建置骨架**（CMake/vcpkg/presets/CI/triplet overlay/靜態 CRT/clang-cl 跨編譯），**只借建置架構，plugin 邏輯全自寫**（依契約寫，不照抄內部程式碼）。關鍵沿用：
 - `commonlibsse-ng-fork`（Monitor221hz vcpkg registry）+ **`nlohmann-json`**（scene.json 序列化）。
-- `build-release-clang-cl-linux` preset → **主力機 Manjaro 可 compile-verify**（不必等 Windows）。
-- GitHub Actions（windows-latest 出 DLL + 靜態 CRT 驗證 + MO2 zip）。
+- `build-release-clang-cl-linux` preset → **唯一受支援的建置與出貨路徑**（Manjaro clang-cl + xwin，產物已實機驗證）。Windows/MSVC CI 於 2026-08-07 放棄。
 
 ## 操作模型（P5 模式制，2026-07-11 全數拍板）
 
