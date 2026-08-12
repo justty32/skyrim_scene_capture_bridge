@@ -21,6 +21,28 @@ cmake --preset build-release-msvc; if ($?) { cmake --build build/release-msvc }
 產出 `build/release-msvc/SceneCaptureBridge.dll`（靜態 CRT，不依賴 vcredist）。
 Debug 把 `release-msvc` 換 `debug-msvc`。改過 `vcpkg.json` / triplet → 先 `Remove-Item -Recurse -Force build` 再 configure（避免舊 CRT cache 的 LNK2038）。
 
+## Windows portable tests（MinGW，非 DLL build）
+
+`CatalogFile` 是不依賴 CommonLib/SKSE 的離線 catalog consumer，可在只有 CMake、
+vcpkg 與 MinGW 的 Windows 主機編譯測試。這條路徑**只驗 portable parser**，不代表
+MinGW 是受支援的 plugin toolchain：
+
+```powershell
+$env:PATH='C:\dev\mingw64\bin;' + $env:PATH
+$env:VCPKG_ROOT='C:\dev\vcpkg'
+cmake -S tests -B build/portable-tests-mingw -G 'MinGW Makefiles' `
+  -DCMAKE_MAKE_PROGRAM=C:/dev/mingw64/bin/mingw32-make.exe `
+  -DCMAKE_CXX_COMPILER=C:/dev/mingw64/bin/g++.exe `
+  -DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake `
+  -DVCPKG_TARGET_TRIPLET=x64-mingw-static `
+  -DVCPKG_HOST_TRIPLET=x64-mingw-static
+cmake --build build/portable-tests-mingw --parallel
+ctest --test-dir build/portable-tests-mingw --output-on-failure
+```
+
+測試有自己的 `tests/vcpkg.json`，只安裝 `nlohmann-json`，不會為 portable test 拉
+CommonLibSSE/DirectXTK。
+
 ## 部署到 MO2（開發迭代）
 
 ```bash
