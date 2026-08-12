@@ -17,6 +17,24 @@ namespace {
     std::string g_offlineStatus = "offline catalog not loaded";
     std::size_t g_offlineMatches = 0;
 
+    std::vector<CatalogFile::RuntimeSource> RuntimePlugins() {
+        std::vector<CatalogFile::RuntimeSource> out;
+        const auto* handler = RE::TESDataHandler::GetSingleton();
+        if (!handler) return out;
+        // `files` is the engine's single global sequence (full + light). Filter
+        // inactive entries through the relocated loaded lookups, preserving the
+        // order that determined override winners. The compiled arrays split full
+        // and light files and therefore cannot prove cross-category precedence.
+        for (const auto* file : handler->files) {
+            if (!file) continue;
+            const auto name = file->GetFilename();
+            if (!handler->LookupLoadedModByName(name) &&
+                !handler->LookupLoadedLightModByName(name)) continue;
+            out.push_back({std::string(name)});
+        }
+        return out;
+    }
+
     // The form types a scene can PLACE. Deliberately no actors: a cell export
     // carries none (the 2026-07-12 scope reversal — SceneExporter.cpp), NPCs go
     // through markers / `sc cap`. Order is the order the type filter shows.
@@ -84,8 +102,19 @@ namespace Catalog {
         auto result = CatalogFile::TryLoad(path);
         g_offline = std::move(result.document);
         g_offlineStatus = std::move(result.status);
-        if (g_offline) SKSE::log::info("Catalog: {}", g_offlineStatus);
-        else SKSE::log::warn("Catalog: {}", g_offlineStatus);
+        if (g_offline) {
+            const auto compatibility = CatalogFile::AssessCompatibility(*g_offline, RuntimePlugins());
+            if (!compatibility.compatible) {
+                g_offline.reset();
+                g_offlineStatus = "scene-catalog.json ignored: " + compatibility.status;
+                SKSE::log::warn("Catalog: {}", g_offlineStatus);
+            } else {
+                g_offlineStatus += "; " + compatibility.status;
+                SKSE::log::info("Catalog: {}", g_offlineStatus);
+            }
+        } else {
+            SKSE::log::warn("Catalog: {}", g_offlineStatus);
+        }
     }
 
     void EnsureBuilt() {

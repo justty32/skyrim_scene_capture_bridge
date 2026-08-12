@@ -171,10 +171,56 @@ namespace CatalogFile {
             auto document = Document::Load(path);
             const auto count = document.Records().size();
             return {std::move(document), "loaded scene-catalog.json (" + std::to_string(count) +
-                " offline record(s); source hashes not runtime-verified)"};
+                " offline record(s))"};
         } catch (const std::exception& error) {
             return {std::nullopt, "scene-catalog.json rejected: " + std::string(error.what())};
         }
+    }
+
+    Compatibility AssessCompatibility(const Document& document,
+        const std::vector<RuntimeSource>& runtimePlugins) {
+        std::unordered_set<std::string> sources;
+        std::vector<bool> seenIndices(document.Sources().size(), false);
+        std::vector<std::string> orderedSources(document.Sources().size());
+        for (const auto& source : document.Sources()) {
+            const auto plugin = Lower(source.plugin);
+            if (!sources.insert(plugin).second)
+                return {false, "catalog has duplicate source plugin '" + source.plugin + "'"};
+            if (source.loadOrderIndex >= seenIndices.size() || seenIndices[source.loadOrderIndex])
+                return {false, "catalog source loadOrderIndex values are not unique and contiguous"};
+            seenIndices[source.loadOrderIndex] = true;
+            orderedSources[source.loadOrderIndex] = plugin;
+        }
+        for (const auto& record : document.Records()) {
+            const auto marker = record.formKey.rfind(":0x");
+            const auto formPlugin = Lower(record.formKey.substr(0, marker));
+            if (formPlugin != Lower(record.plugin))
+                return {false, "catalog record FormKey origin disagrees with plugin: " +
+                    record.formKey};
+            if (!sources.contains(Lower(record.plugin)))
+                return {false, "catalog record origin plugin is absent from sources: " +
+                    record.plugin};
+            if (!sources.contains(Lower(record.sourcePlugin)))
+                return {false, "catalog record sourcePlugin is absent from sources: " +
+                    record.sourcePlugin};
+        }
+
+        std::unordered_set<std::string> runtime;
+        for (const auto& source : runtimePlugins) {
+            if (!runtime.insert(Lower(source.plugin)).second)
+                return {false, "runtime reports duplicate plugin '" + source.plugin + "'"};
+        }
+        for (const auto& plugin : sources)
+            if (!runtime.contains(plugin))
+                return {false, "catalog source is not loaded: " + plugin};
+        for (const auto& plugin : runtime)
+            if (!sources.contains(plugin))
+                return {false, "loaded plugin is absent from catalog: " + plugin};
+        for (std::size_t i = 0; i < orderedSources.size(); ++i) {
+            if (orderedSources[i] != Lower(runtimePlugins[i].plugin))
+                return {false, "catalog source order differs from runtime order"};
+        }
+        return {true, "source names/global order matched runtime; source hashes not runtime-verified"};
     }
 
 }  // namespace CatalogFile

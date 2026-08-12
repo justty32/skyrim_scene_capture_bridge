@@ -151,6 +151,86 @@ namespace {
         Check(!malformed.document && malformed.status.find("rejected") != std::string::npos,
             "malformed file status");
     }
+
+    void CompatibilityRequiresExactRuntimeSourceSet() {
+        auto document = Parse(kValid);
+        auto assessment = CatalogFile::AssessCompatibility(document, {{"catalogone.ESP"}});
+        Check(assessment.compatible, "case-insensitive exact source set");
+        assessment = CatalogFile::AssessCompatibility(document, {});
+        Check(!assessment.compatible && assessment.status.find("not loaded") != std::string::npos,
+            "missing runtime plugin");
+        assessment = CatalogFile::AssessCompatibility(document,
+            {{"CatalogOne.esp"}, {"Extra.esp"}});
+        Check(!assessment.compatible && assessment.status.find("absent from catalog") != std::string::npos,
+            "extra runtime plugin");
+    }
+
+    void CompatibilityRejectsBrokenProvenance() {
+        auto duplicate = std::string(kValid);
+        const auto sourceEnd = duplicate.find("  }],\n  \"records\"");
+        const auto sourceStart = duplicate.find("{\n    \"plugin\"");
+        const auto source = duplicate.substr(sourceStart, sourceEnd - sourceStart + 3);
+        duplicate.insert(sourceEnd + 3, ",\n" + source);
+        auto duplicated = Parse(std::move(duplicate));
+        auto assessment = CatalogFile::AssessCompatibility(duplicated,
+            {{"CatalogOne.esp"}});
+        Check(!assessment.compatible && assessment.status.find("duplicate source") != std::string::npos,
+            "duplicate catalog source");
+
+        auto unknown = std::string(kValid);
+        constexpr std::string_view original = "\"sourcePlugin\": \"CatalogOne.esp\"";
+        unknown.replace(unknown.find(original), original.size(),
+            "\"sourcePlugin\": \"Missing.esp\"");
+        auto unknownSource = Parse(std::move(unknown));
+        assessment = CatalogFile::AssessCompatibility(unknownSource,
+            {{"CatalogOne.esp"}});
+        Check(!assessment.compatible && assessment.status.find("absent from sources") != std::string::npos,
+            "record sourcePlugin cross-reference");
+
+        auto gap = std::string(kValid);
+        const auto sourceEnd2 = gap.find("  }],\n  \"records\"");
+        const auto sourceStart2 = gap.find("{\n    \"plugin\"");
+        auto second = gap.substr(sourceStart2, sourceEnd2 - sourceStart2 + 3);
+        second.replace(second.find("CatalogOne.esp"), 14, "CatalogTwo.esp");
+        second.replace(second.find("\"loadOrderIndex\": 0"), 19, "\"loadOrderIndex\": 2");
+        gap.insert(sourceEnd2 + 3, ",\n" + second);
+        auto gapped = Parse(std::move(gap));
+        assessment = CatalogFile::AssessCompatibility(gapped,
+            {{"CatalogOne.esp"}, {"CatalogTwo.esp"}});
+        Check(!assessment.compatible && assessment.status.find("not unique and contiguous") !=
+            std::string::npos, "gapped catalog source order");
+    }
+
+    void CompatibilityChecksGlobalRuntimeOrder() {
+        auto json = std::string(kValid);
+        const auto sourceEnd = json.find("  }],\n  \"records\"");
+        const auto sourceStart = json.find("{\n    \"plugin\"");
+        auto second = json.substr(sourceStart, sourceEnd - sourceStart + 3);
+        second.replace(second.find("CatalogOne.esp"), 14, "CatalogTwo.esp");
+        second.replace(second.find("\"loadOrderIndex\": 0"), 19, "\"loadOrderIndex\": 1");
+        json.insert(sourceEnd + 3, ",\n" + second);
+        auto document = Parse(std::move(json));
+
+        auto assessment = CatalogFile::AssessCompatibility(document,
+            {{"CatalogTwo.esp"}, {"CatalogOne.esp"}});
+        Check(!assessment.compatible && assessment.status.find("order differs") != std::string::npos,
+            "reversed runtime order");
+        assessment = CatalogFile::AssessCompatibility(document,
+            {{"CatalogOne.esp"}, {"CatalogTwo.esp"}});
+        Check(assessment.compatible, "matching global runtime order");
+    }
+
+    void CompatibilityRejectsFormKeyOriginMismatch() {
+        auto json = std::string(kValid);
+        constexpr std::string_view original = "\"plugin\": \"CatalogOne.esp\"";
+        const auto record = json.find(original, json.find("\"records\""));
+        json.replace(record, original.size(), "\"plugin\": \"Other.esp\"");
+        auto document = Parse(std::move(json));
+        auto assessment = CatalogFile::AssessCompatibility(document,
+            {{"CatalogOne.esp"}});
+        Check(!assessment.compatible && assessment.status.find("origin disagrees") !=
+            std::string::npos, "FormKey plugin prefix cross-reference");
+    }
 }
 
 int main() {
@@ -164,6 +244,10 @@ int main() {
         {"rejects duplicate FormKeys", RejectsDuplicateFormKeysIgnoringCase},
         {"rejects contract drift", RejectsContractDrift},
         {"file loading fails soft", FileLoadingFailsSoft},
+        {"compatibility requires exact runtime sources", CompatibilityRequiresExactRuntimeSourceSet},
+        {"compatibility rejects broken provenance", CompatibilityRejectsBrokenProvenance},
+        {"compatibility checks global runtime order", CompatibilityChecksGlobalRuntimeOrder},
+        {"compatibility rejects FormKey origin mismatch", CompatibilityRejectsFormKeyOriginMismatch},
     };
     int failures = 0;
     for (const auto& [name, test] : tests) {

@@ -49,6 +49,12 @@ CommonLibSSE/DirectXTK。
 `scene-catalog.json`，放在 Skyrim 的 SKSE 資料目錄（與 bridge 的
 `scene-capture-palette.json`、`SceneCaptureBridge.ini` 及匯出檔同層）。bridge 只在
 `kDataLoaded` 載入一次；替換後需完整重啟遊戲。Browser 會顯示載入或拒絕原因。
+`catalog build` 的 plugin 參數必須包含引擎最後載入的**完整 plugin 集合**（依
+low→high 順序），不是只列想搜尋的幾個 mod；少一個或多一個，bridge 都會拒絕
+metadata，避免用不完整 override winner 污染顯示。順序另需與 engine
+`TESDataHandler::files` 過濾出的 loaded global sequence 精確相符；它保留 full/light
+交錯順序，不使用兩個 compiled array 拼接。MO2 VFS 內檔案的 SHA-256 尚未 runtime
+核對；UI 會保留限制提示。
 
 ## 部署到 MO2（開發迭代）
 

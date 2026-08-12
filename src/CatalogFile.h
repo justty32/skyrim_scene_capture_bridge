@@ -66,4 +66,19 @@ namespace CatalogFile {
     // inaccessible, or invalid files are reported without throwing.
     [[nodiscard]] LoadResult TryLoad(const std::filesystem::path& path);
 
+    struct Compatibility {
+        bool compatible = false;
+        std::string status;
+    };
+
+    struct RuntimeSource {
+        std::string plugin;
+    };
+
+    // Structural provenance + exact runtime source/global-order gate. Names are
+    // compared case-insensitively because Windows plugin identity is case-insensitive.
+    // File digests are deliberately outside this pure core.
+    [[nodiscard]] Compatibility AssessCompatibility(const Document& document,
+        const std::vector<RuntimeSource>& runtimePlugins);
+
 }  // namespace CatalogFile
