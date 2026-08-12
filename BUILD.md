@@ -43,6 +43,17 @@ ctest --test-dir build/portable-tests-mingw --output-on-failure
 測試有自己的 `tests/vcpkg.json`，只安裝 `nlohmann-json`，不會為 portable test 拉
 CommonLibSSE/DirectXTK。
 
+同一個 CTest configure 若偵測到 `dotnet` 與 sibling `../ModForge`，會另外註冊
+`modforge_catalog_contract`。它不是手抄 fixture：測試會呼叫真實 ModForge CLI，先由
+兩份最小 spec 生成一個 full `.esp` 與一個 light `.esl`，再跑 `catalog build`／
+`catalog export-json`，最後把實際 JSON bytes 餵進 `CatalogFile`。驗證範圍包括
+schema/provenance、full+light 全域順序、EditorID/name/model merge，以及缺少、多出、
+反轉 runtime source 與壞 JSON 的 fail-closed。產物留在
+`<test-build>/modforge-catalog-contract/` 供失敗時檢查；下次測試重建。
+
+獨立 clone 若沒有 sibling ModForge 或 dotnet，configure 會明示略過這個跨 repo 測試，
+`catalog_file_tests` 仍照常執行。可用 `-DMODFORGE_ROOT=<path>` 指向別處的 checkout。
+
 ## 安裝離線 catalog
 
 用 ModForge `catalog export-json <db> <out.json>` 產生檔案，命名為
