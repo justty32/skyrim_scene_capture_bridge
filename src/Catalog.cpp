@@ -1,16 +1,21 @@
 #include "Catalog.h"
 
+#include "CatalogFile.h"
 #include "SceneExporter.h"  // ResolveDurableId — the same key the exporter writes
 #include "log.h"
 
 #include <algorithm>
 #include <cctype>
+#include <optional>
 
 namespace {
     std::vector<Catalog::Entry> g_entries;
     std::vector<std::string> g_plugins;
     std::vector<RE::FormType> g_types;
     bool g_built = false;
+    std::optional<CatalogFile::Document> g_offline;
+    std::string g_offlineStatus = "offline catalog not loaded";
+    std::size_t g_offlineMatches = 0;
 
     // The form types a scene can PLACE. Deliberately no actors: a cell export
     // carries none (the 2026-07-12 scope reversal — SceneExporter.cpp), NPCs go
@@ -63,6 +68,25 @@ namespace {
 namespace Catalog {
 
     bool Built() { return g_built; }
+    const std::string& OfflineStatus() { return g_offlineStatus; }
+    std::size_t OfflineMatches() { return g_offlineMatches; }
+
+    void LoadOffline() {
+        g_offline.reset();
+        g_offlineMatches = 0;
+        const auto dir = SKSE::log::log_directory();
+        if (!dir) {
+            g_offlineStatus = "offline catalog unavailable: no SKSE data directory";
+            SKSE::log::warn("Catalog: {}", g_offlineStatus);
+            return;
+        }
+        const auto path = *dir / "scene-catalog.json";
+        auto result = CatalogFile::TryLoad(path);
+        g_offline = std::move(result.document);
+        g_offlineStatus = std::move(result.status);
+        if (g_offline) SKSE::log::info("Catalog: {}", g_offlineStatus);
+        else SKSE::log::warn("Catalog: {}", g_offlineStatus);
+    }
 
     void EnsureBuilt() {
         if (g_built) return;
@@ -102,7 +126,17 @@ namespace Catalog {
                     if (const char* n = full->GetFullName(); n && *n) e.name = n;
                 }
                 e.model = path;
-                e.search = Lower(e.name + "|" + e.model + "|" + e.id);
+                if (g_offline) {
+                    if (const auto* metadata = g_offline->Find(e.id)) {
+                        CatalogFile::DisplayMetadata display{e.editorId, e.name, e.model};
+                        CatalogFile::Enrich(display, *metadata);
+                        e.editorId = std::move(display.editorId);
+                        e.name = std::move(display.name);
+                        e.model = std::move(display.modelPath);
+                        ++g_offlineMatches;
+                    }
+                }
+                e.search = Lower(e.editorId + "|" + e.name + "|" + e.model + "|" + e.id);
                 g_entries.push_back(std::move(e));
             }
             if (g_entries.size() > before) g_types.push_back(type);

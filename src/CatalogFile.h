@@ -32,6 +32,16 @@ namespace CatalogFile {
         std::string sourcePath;
     };
 
+    struct DisplayMetadata {
+        std::string editorId;
+        std::string name;
+        std::string modelPath;
+    };
+
+    // Runtime data is authoritative. Offline values only fill fields Skyrim did
+    // not retain in memory (normally editorId, and names for many statics).
+    void Enrich(DisplayMetadata& target, const Record& source);
+
     class Document {
     public:
         [[nodiscard]] static Document Parse(std::istream& input);
@@ -46,5 +56,14 @@ namespace CatalogFile {
         std::vector<Record> records_;
         std::unordered_map<std::string, std::size_t> byFormKey_;
     };
+
+    struct LoadResult {
+        std::optional<Document> document;
+        std::string status;
+    };
+
+    // Fail-soft boundary used by the SKSE runtime and portable tests. Missing,
+    // inaccessible, or invalid files are reported without throwing.
+    [[nodiscard]] LoadResult TryLoad(const std::filesystem::path& path);
 
 }  // namespace CatalogFile

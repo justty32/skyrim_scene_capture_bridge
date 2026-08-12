@@ -115,6 +115,12 @@ namespace {
 
 namespace CatalogFile {
 
+    void Enrich(DisplayMetadata& target, const Record& source) {
+        if (target.editorId.empty() && source.editorId) target.editorId = *source.editorId;
+        if (target.name.empty() && source.name) target.name = *source.name;
+        if (target.modelPath.empty() && source.modelPath) target.modelPath = *source.modelPath;
+    }
+
     Document Document::Parse(std::istream& input) {
         Json root;
         try {
@@ -152,6 +158,23 @@ namespace CatalogFile {
     const Record* Document::Find(std::string_view formKey) const {
         const auto found = byFormKey_.find(Lower(formKey));
         return found == byFormKey_.end() ? nullptr : &records_[found->second];
+    }
+
+    LoadResult TryLoad(const std::filesystem::path& path) {
+        std::error_code filesystemError;
+        const bool exists = std::filesystem::exists(path, filesystemError);
+        if (filesystemError)
+            return {std::nullopt, "scene-catalog.json inaccessible: " + filesystemError.message()};
+        if (!exists)
+            return {std::nullopt, "scene-catalog.json not found (runtime metadata only)"};
+        try {
+            auto document = Document::Load(path);
+            const auto count = document.Records().size();
+            return {std::move(document), "loaded scene-catalog.json (" + std::to_string(count) +
+                " offline record(s); source hashes not runtime-verified)"};
+        } catch (const std::exception& error) {
+            return {std::nullopt, "scene-catalog.json rejected: " + std::string(error.what())};
+        }
     }
 
 }  // namespace CatalogFile

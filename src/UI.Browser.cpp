@@ -9,9 +9,9 @@
 //   * MOST STATICS HAVE NO NAME. Not a lookup failure — STAT records simply have
 //     no FULL name (EDID/OBND/MODL is the whole record). The model path is their
 //     name, which is why it is the column that matters.
-//   * THERE ARE NO EDITOR IDs. Skyrim SE does not keep them in memory (Catalog.h
-//     explains). Searching the model path is the better key anyway: "mountain"
-//     lands on Landscape\Mountains\ without knowing a single EditorID.
+//   * THERE ARE NO EDITOR IDs in Skyrim's runtime records. An optional ModForge
+//     scene-catalog.json beside the exports supplies them as search/display
+//     metadata; the runtime form remains authoritative for placement.
 
 #include "UI.h"
 
@@ -58,6 +58,7 @@ namespace {
     // what a person would have called it.
     std::string LabelOf(const Catalog::Entry& e) {
         if (!e.name.empty()) return e.name;
+        if (!e.editorId.empty()) return e.editorId;
         auto slash = e.model.find_last_of("\\/");
         std::string file = slash == std::string::npos ? e.model : e.model.substr(slash + 1);
         if (auto dot = file.rfind('.'); dot != std::string::npos) file = file.substr(0, dot);
@@ -95,8 +96,9 @@ void __stdcall UI::BrowserPage::Render() {
         "and leaves the ghost up, so a row of trees is one key pressed five times.",
         Catalog::All().size());
     ImGuiMCP::TextColored(kDim,
-        "Search matches the MODEL PATH and the name — most statics have no name, and Skyrim "
-        "keeps no EditorIDs in memory, so \"mountain\" (the path) is the key that works.");
+        "Search matches EditorID (when scene-catalog.json is loaded), model path, name, and FormKey.");
+    ImGuiMCP::TextColored(kDim, "%s; %zu runtime match(es).",
+        Catalog::OfflineStatus().c_str(), Catalog::OfflineMatches());
     ImGuiMCP::Separator();
 
     // ---- filters -----------------------------------------------------------
@@ -136,7 +138,9 @@ void __stdcall UI::BrowserPage::Render() {
         const auto idx = g_hits[static_cast<std::size_t>(row)];
         const auto& e = Catalog::All()[idx];
         ImGuiMCP::PushID(row);
-        const std::string line = (e.name.empty() ? std::string("—") : e.name) + "   " +
+        const std::string identity = e.editorId.empty() ?
+            (e.name.empty() ? std::string("—") : e.name) : e.editorId;
+        const std::string line = identity + "   " +
             e.model + "   [" + Catalog::TypeName(e.type) + "]   " + e.id;
         if (ImGuiMCP::Selectable(line.c_str(), idx == g_selected)) {
             g_selected = idx;
@@ -156,6 +160,7 @@ void __stdcall UI::BrowserPage::Render() {
     }
     const auto& e = Catalog::All()[g_selected];
     ImGuiMCP::Text("selected: %s", LabelOf(e).c_str());
+    if (!e.editorId.empty()) ImGuiMCP::Text("  EditorID: %s", e.editorId.c_str());
     ImGuiMCP::Text("  %s", e.model.c_str());
     ImGuiMCP::Text("  %s   [%s]", e.id.c_str(), Catalog::TypeName(e.type));
 

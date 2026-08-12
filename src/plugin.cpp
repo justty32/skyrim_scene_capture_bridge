@@ -1,4 +1,5 @@
 #include "log.h"
+#include "Catalog.h"
 #include "Console.h"
 #include "CoSave.h"
 #include "Editor.h"
@@ -107,6 +108,7 @@ void OnDataLoaded() {
     // the co-save's binds are then applied only where the ini stayed silent
     // (Modes::ApplyCoSaveBind).
     KeyIni::Load();
+    Catalog::LoadOffline();
     if (auto* idm = RE::BSInputDeviceManager::GetSingleton()) {
         idm->AddEventSink(HotkeySink::GetSingleton());
         SKSE::log::info("SceneCaptureBridge: input sink registered (mode system, "

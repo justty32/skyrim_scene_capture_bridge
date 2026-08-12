@@ -1,6 +1,7 @@
 #include "CatalogFile.h"
 
 #include <functional>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -72,6 +73,24 @@ namespace {
         Check(document.Find("CatalogOne.esp:0xFFFFFF") == nullptr, "missing lookup");
     }
 
+    void EnrichmentPreservesRuntimeValues() {
+        auto document = Parse(kValid);
+        const auto* record = document.Find("CatalogOne.esp:0x000802");
+        Check(record != nullptr, "metadata fixture lookup");
+        CatalogFile::DisplayMetadata display{"", "Runtime Name", "Runtime\\Model.nif"};
+        CatalogFile::Enrich(display, *record);
+        Check(display.editorId == "MF_CatalogStatic", "offline EditorID fills missing runtime field");
+        Check(display.name == "Runtime Name", "runtime name remains authoritative");
+        Check(display.modelPath == "Runtime\\Model.nif", "runtime model remains authoritative");
+
+        const auto* named = document.Find("CatalogOne.esp:0x000803");
+        Check(named != nullptr, "named metadata fixture lookup");
+        CatalogFile::DisplayMetadata missing;
+        CatalogFile::Enrich(missing, *named);
+        Check(missing.name == "Aldric", "offline name fills missing runtime field");
+        Check(missing.modelPath.empty(), "offline null leaves missing runtime field empty");
+    }
+
     void RejectsUnsupportedVersion() {
         auto json = std::string(kValid);
         json.replace(json.find("\"schemaVersion\": 1"), 18, "\"schemaVersion\": 2");
@@ -114,17 +133,37 @@ namespace {
         json.insert(marker, "\"unexpected\": true,\n      ");
         ExpectError(std::move(json), "unexpected property");
     }
+
+    void FileLoadingFailsSoft() {
+        const auto path = std::filesystem::temp_directory_path() /
+            "scene-capture-bridge-catalog-file-tests.json";
+        std::filesystem::remove(path);
+        const auto missing = CatalogFile::TryLoad(path);
+        Check(!missing.document && missing.status.find("not found") != std::string::npos,
+            "missing file status");
+
+        {
+            std::ofstream output(path);
+            output << "{ broken";
+        }
+        const auto malformed = CatalogFile::TryLoad(path);
+        std::filesystem::remove(path);
+        Check(!malformed.document && malformed.status.find("rejected") != std::string::npos,
+            "malformed file status");
+    }
 }
 
 int main() {
     const std::pair<const char*, std::function<void()>> tests[] = {
         {"parses and indexes records", ParsesAndIndexesRecords},
+        {"enrichment preserves runtime values", EnrichmentPreservesRuntimeValues},
         {"rejects unsupported version", RejectsUnsupportedVersion},
         {"accepts schema integer number tokens", AcceptsSchemaIntegerNumberTokens},
         {"rejects malformed FormKey", RejectsMalformedFormKey},
         {"rejects integer outside uint64 range", RejectsIntegerOutsideUint64Range},
         {"rejects duplicate FormKeys", RejectsDuplicateFormKeysIgnoringCase},
         {"rejects contract drift", RejectsContractDrift},
+        {"file loading fails soft", FileLoadingFailsSoft},
     };
     int failures = 0;
     for (const auto& [name, test] : tests) {

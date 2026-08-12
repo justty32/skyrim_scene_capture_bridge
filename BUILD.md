@@ -43,6 +43,13 @@ ctest --test-dir build/portable-tests-mingw --output-on-failure
 測試有自己的 `tests/vcpkg.json`，只安裝 `nlohmann-json`，不會為 portable test 拉
 CommonLibSSE/DirectXTK。
 
+## 安裝離線 catalog
+
+用 ModForge `catalog export-json <db> <out.json>` 產生檔案，命名為
+`scene-catalog.json`，放在 Skyrim 的 SKSE 資料目錄（與 bridge 的
+`scene-capture-palette.json`、`SceneCaptureBridge.ini` 及匯出檔同層）。bridge 只在
+`kDataLoaded` 載入一次；替換後需完整重啟遊戲。Browser 會顯示載入或拒絕原因。
+
 ## 部署到 MO2（開發迭代）
 
 ```bash
