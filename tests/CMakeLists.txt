@@ -19,6 +19,19 @@ endif()
 
 add_test(NAME catalog_file_tests COMMAND catalog_file_tests)
 
+add_executable(catalog_compatibility_probe
+    CatalogCompatibilityProbe.cpp
+    ../src/CatalogFile.cpp
+)
+target_compile_features(catalog_compatibility_probe PRIVATE cxx_std_23)
+target_include_directories(catalog_compatibility_probe PRIVATE ../src)
+target_link_libraries(catalog_compatibility_probe PRIVATE nlohmann_json::nlohmann_json)
+if(MSVC)
+    target_compile_options(catalog_compatibility_probe PRIVATE /W4 /WX)
+else()
+    target_compile_options(catalog_compatibility_probe PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 # Live producer/consumer contract: when the sibling ModForge checkout and dotnet
 # are available, CTest asks the real CLI to build synthetic full/light plugins,
 # export scene-catalog.json, then feeds those bytes to CatalogFile.
