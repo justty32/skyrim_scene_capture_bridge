@@ -9,6 +9,7 @@ namespace Physics {
         case RE::FormType::MovableStatic:
         case RE::FormType::Misc:
         case RE::FormType::Weapon:
+        case RE::FormType::Armor:
         case RE::FormType::Ammo:
         case RE::FormType::Book:
         case RE::FormType::AlchemyItem:

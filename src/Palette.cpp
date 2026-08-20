@@ -362,8 +362,8 @@ namespace Palette {
         // with the same kind of FormID, and they shipped. The row IS the ownership.
         RegisterPlaced(placed.get(), s, physicsOff);
 
-        SKSE::log::info("Palette: placed '{}' ({}, scale {:.2f}) at ({:.1f}, {:.1f}, {:.1f}){}{}",
-            s.name,
+        SKSE::log::info("Palette: placed '{}' ref={:08X} ({}, scale {:.2f}) at ({:.1f}, {:.1f}, {:.1f}){}{}",
+            s.name, placed->GetFormID(),
             posOverride ? "ghost"
                         : Modes::Ghost(Modes::Mode::kPlace)
                             ? (aimed ? "aimed, no ghost up" : "feet, no ghost up")

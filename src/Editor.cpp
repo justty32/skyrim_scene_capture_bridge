@@ -5,6 +5,7 @@
 #include "Modes.h"
 #include "Numpad.h"
 #include "Overrides.h"
+#include "Palette.h"
 #include "Physics.h"
 #include "Preview.h"
 #include "SceneExporter.h"
@@ -49,6 +50,7 @@ namespace {
         RE::ObjectRefHandle handle;
         bool isActor = false;
         bool frozen = false;   // we keyframed it on select; restore on release
+        bool keepFrozen = false;  // py0 placement: commit/cancel must preserve its contract
         std::string authoredId;  // non-empty = authored ref -> commit registers an override
         bool isMarker = false;   // target is a marker gem -> commit updates its registry pose
         std::uint32_t markerSeq = 0;
@@ -62,7 +64,9 @@ namespace {
 
     void ReleasePhysics() {
         if (!g.frozen) return;
-        if (auto ref = Target(); ref && Physics::Release(ref.get())) {
+        if (g.keepFrozen) {
+            SKSE::log::info("Editor: physics remains frozen — original py0 placement");
+        } else if (auto ref = Target(); ref && Physics::Release(ref.get())) {
             SKSE::log::info("Editor: physics restored — the object will settle");
         }
         g.frozen = false;
@@ -181,6 +185,8 @@ namespace {
         g.origPos = ref->GetPosition();
         g.origAngle = ref->data.angle;
         g.origScale = ref->GetScale();
+        if (const auto* placed = Palette::PlacedInfoFor(ref.get()))
+            g.keepFrozen = placed->noHavokSettle;
         // Freeze havok while editing, or physics fights every nudge (細摳③) —
         // the P3 behaviour, now a SETTING. `sc ed py0` (the DEFAULT) freezes;
         // `sc ed py1` leaves havok running so the object reacts while you drive
