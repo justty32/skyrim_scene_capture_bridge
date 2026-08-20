@@ -13,8 +13,9 @@
 // for a handful of types (CELL and WRLD among them, which is why SceneExporter
 // can print those). So the search index is built from what IS in memory:
 //
-//   * the MODEL PATH (TESModel::GetModel(), always present) — and it is a BETTER
-//     key than an EDID anyway: searching "mountain" hits Landscape\Mountains\*.
+//   * the MODEL PATH (`TESModel`, or ARMO's `TESBipedModelForm::worldModels`) —
+//     and it is a BETTER key than an EDID anyway: searching "mountain" hits
+//     Landscape\Mountains\*.
 //   * the display name (statics have none — that is normal, not a bug).
 //   * the plugin + FormID (the durable id, which is also the export key).
 //

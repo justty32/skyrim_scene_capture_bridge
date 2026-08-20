@@ -19,7 +19,7 @@ namespace {
 
     std::vector<CatalogFile::RuntimeSource> RuntimePlugins() {
         std::vector<CatalogFile::RuntimeSource> out;
-        const auto* handler = RE::TESDataHandler::GetSingleton();
+        auto* handler = RE::TESDataHandler::GetSingleton();
         if (!handler) return out;
         // `files` is the engine's single global sequence (full + light). Filter
         // inactive entries through the relocated loaded lookups, preserving the
@@ -81,6 +81,27 @@ namespace {
         }
         return out;
     }
+
+    const char* ModelPath(RE::TESBoundObject* base) {
+        if (const auto* model = base->As<RE::TESModel>()) {
+            if (const char* path = model->GetModel(); path && *path) return path;
+        }
+
+        // ARMO does not inherit TESModel. Its dropped/inventory world meshes are
+        // TESBipedModelForm::worldModels[Male/Female], so the generic gate above
+        // used to make Armor a dead Browser type even though kTypes listed it.
+        // Follow a template chain as a fallback; malformed cycles remain bounded.
+        auto* armor = base->As<RE::TESObjectARMO>();
+        for (std::size_t depth = 0; armor && depth < 16; ++depth) {
+            for (const auto& worldModel : armor->worldModels) {
+                if (const char* path = worldModel.GetModel(); path && *path) return path;
+            }
+            auto* next = armor->templateArmor;
+            if (next == armor) break;
+            armor = next;
+        }
+        return nullptr;
+    }
 }
 
 namespace Catalog {
@@ -141,8 +162,7 @@ namespace Catalog {
                 // A base with no model would place an INVISIBLE object (no error,
                 // nothing to see, nothing to preview) — the classic wrong-nif trap.
                 // Nothing to browse here, so it is not in the browser.
-                const auto* model = base->As<RE::TESModel>();
-                const char* path = model ? model->GetModel() : nullptr;
+                const char* path = ModelPath(base);
                 if (!path || !*path) { ++noModel; continue; }
 
                 Entry e;
