@@ -197,7 +197,7 @@ namespace {
         ghost->SetCollision(false);
 
         RE::NiPoint3 pos;
-        if (!Aim::LookHit(pos)) pos = player->GetPosition();
+        if (!Aim::RenderedCameraHit(pos)) pos = player->GetPosition();
 
         g_angle = slotAngle;
         g_scale = slotScale * AutoScale(base, pos);
@@ -325,7 +325,7 @@ namespace Preview {
         }
         if (!g_follow) return;
         RE::NiPoint3 pos;
-        if (!Aim::LookHit(pos)) return;  // looking at the sky: leave it where it is
+        if (!Aim::RenderedCameraHit(pos)) return;  // looking at the sky: leave it where it is
         ref->SetPosition(pos);
         ref->Update3DPosition(true);
     }
@@ -401,7 +401,8 @@ namespace Preview {
 
         if (!Palette::PlaceSlot(s, &pos)) return false;
         // The ghost STAYS up — placing a row of trees is the same key, five times.
-        SKSE::log::info("Preview: committed '{}' ({}) scale={:.2f}", g_label, s.baseId, s.scale);
+        SKSE::log::info("Preview: committed '{}' ({}) from ghost at ({:.1f}, {:.1f}, {:.1f}) scale={:.2f}",
+            g_label, s.baseId, pos.x, pos.y, pos.z, s.scale);
         return true;
     }
 

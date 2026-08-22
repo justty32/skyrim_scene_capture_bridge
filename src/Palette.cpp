@@ -318,7 +318,7 @@ namespace Palette {
         bool aimed = true;
         if (posOverride) {
             pos = *posOverride;
-        } else if (!(aimed = Aim::LookHit(pos))) {
+        } else if (!(aimed = Aim::RenderedCameraHit(pos))) {
             pos = player->GetPosition();
         }
 
@@ -364,10 +364,10 @@ namespace Palette {
 
         SKSE::log::info("Palette: placed '{}' ref={:08X} ({}, scale {:.2f}) at ({:.1f}, {:.1f}, {:.1f}){}{}",
             s.name, placed->GetFormID(),
-            posOverride ? "ghost"
+            posOverride ? "ghost pose from rendered-camera ray"
                         : Modes::Ghost(Modes::Mode::kPlace)
-                            ? (aimed ? "aimed, no ghost up" : "feet, no ghost up")
-                            : (aimed ? "aimed, ghosts OFF (gh0) — slot's own size" : "feet, gh0"),
+                            ? (aimed ? "rendered-camera ray, no ghost up" : "feet, no ghost up")
+                            : (aimed ? "rendered-camera ray, ghosts OFF (gh0) — slot's own size" : "feet, gh0"),
             s.scale, pos.x, pos.y, pos.z,
             physicsOff ? " [physics OFF -> noHavokSettle]" : "",
             carryExtra ? " [extra data -> minted item]" : "");
