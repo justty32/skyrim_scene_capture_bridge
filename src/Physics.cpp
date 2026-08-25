@@ -31,10 +31,12 @@ namespace Physics {
         task->AddTask([handle, retries]() {
             auto ref = handle.get();
             if (!ref) return;
-            if (ref->Get3D()) {
-                ref->SetMotionType(RE::hkpMotion::MotionType::kKeyframed, false);
+            // A loaded 3D root does not guarantee that its child rigid bodies are
+            // ready on the same frame. SetMotionType reports that distinction;
+            // only stop retrying after the motion change actually succeeded.
+            if (ref->Get3D() &&
+                ref->SetMotionType(RE::hkpMotion::MotionType::kKeyframed, false))
                 return;
-            }
             if (retries > 0) FreezeDeferred(handle, retries - 1);
         });
     }

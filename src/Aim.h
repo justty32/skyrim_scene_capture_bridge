@@ -22,8 +22,10 @@ namespace Aim {
     // deliberately separate from LookHit/RayRef: marker and explicit ref-pick
     // controls retain their established player-facing semantics, while the
     // ghost and both placement paths agree with the centre of the actual view.
-    // The collector ignores the player so a third-person camera ray can pass
-    // through the avatar instead of stopping on their back.
+    // The collector ignores the player and preview ghosts (live or sentinel-
+    // marked). This lets a third-person camera ray pass through the avatar and
+    // prevents the per-frame ghost follow from feeding its own moving collision
+    // back into the next hit. Committed refs remain ordinary world aim surfaces.
     bool RenderedCameraHit(RE::NiPoint3& out);
 
     // The activatable ref under the crosshair (CrosshairPickData) — chairs,

@@ -176,13 +176,14 @@ namespace {
         // a ghost by anything that looks at it, including a future session.
         ghost->extraList.Add(new RE::ExtraTextDisplayData(kSentinel));
 
-        // And intangibility SECOND — this ONE LINE is the whole mechanism, and it
-        // only works because of WHERE it is (🎮 confirmed 2026-07-14 after two
-        // failed rounds). `SetCollision(false)` does not touch havok: it sets the
-        // ref's kCollisionsDisabled record flag. But that flag is what the ENGINE
-        // reads when it BUILDS a ref's collision — and PlaceObjectAtMe returns
-        // before any 3D exists. Set the flag here, in the gap, and the collision is
-        // NEVER BUILT. There is nothing to strip, disable or chase.
+        // And intangibility SECOND. SetCollision(false) sets the ref's
+        // kCollisionsDisabled record flag; doing it before the 3D loads keeps the
+        // ghost out of ordinary gameplay collision/activation. It is NOT a motion
+        // primitive and not a sufficient filter for the A8 broad ray collector:
+        // movable NIFs may still expose a rigid body to Havok simulation/query.
+        // Those are separate contracts below: FreezeDeferred keyframes motion and
+        // the placement collector explicitly ignores Preview::IsGhost().
+        // All three controls are required; none substitutes for another.
         //
         // Two rounds were lost trying to take collision away AFTER the fact:
         //   v1 Get3D()->SetCollisionLayer() — reaches only the root node's own
@@ -190,10 +191,9 @@ namespace {
         //   v2 walk the collision scenegraph and rewrite every body's filter info
         //      (po3 / Base Object Swapper's move) — and the log proved it never
         //      once touched a body, whatever the reason.
-        // The lesson generalises: DON'T UNDO WHAT YOU CAN DECLINE TO CREATE.
-        // (A havok body does not follow SetPosition either — a STAT's body stays
-        // fixed where the ref first landed. That is why the user saw the visual walk
-        // off with his aim while the collision box stayed behind.)
+        // A Havok body does not necessarily follow SetPosition either; moving the
+        // visual without controlling/filtering the body creates exactly the sort of
+        // transform feedback this preview must avoid.
         ghost->SetCollision(false);
 
         RE::NiPoint3 pos;

@@ -32,10 +32,10 @@ namespace Physics {
     [[nodiscard]] bool HavokMovable(RE::TESBoundObject* base);
 
     // Freeze an object's havok so it cannot fall or be kicked. The catch: right
-    // after PlaceObjectAtMe the 3D (hence the rigid body) is not loaded yet, so
-    // an immediate SetMotionType silently no-ops (log: "Target does not have
-    // 3D"). Retry on the SKSE task queue until Get3D() is live — one frame is
-    // usually enough; the retry cap stops a never-loading ref from spinning.
+    // after PlaceObjectAtMe the 3D root and its child rigid bodies can become
+    // ready on different frames, so an immediate SetMotionType can fail even
+    // after Get3D() turns non-null. Retry on the SKSE task queue until the motion
+    // change itself succeeds; the cap stops a never-loading ref from spinning.
     void FreezeDeferred(RE::ObjectRefHandle handle, int retries = 60);
 
     // Hand the object back to havok (it will settle). Returns false when there
