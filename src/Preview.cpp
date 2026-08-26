@@ -32,6 +32,10 @@ namespace {
     RE::ObjectRefHandle g_handle;
     RE::TESBoundObject* g_base = nullptr;
     std::string g_label;
+    // The player's cell owns the preview lifetime. The ghost itself may follow a
+    // rendered-camera hit into a neighbouring exterior cell without that meaning
+    // the player left the cell in which the preview was created.
+    RE::TESObjectCELL* g_playerCell = nullptr;
 
     // SOURCE: the palette's selected slot, unless the Browser pinned a catalogue
     // entry. g_lastSeenSel lets Update() notice that you changed the palette
@@ -75,6 +79,7 @@ namespace {
         g_handle = {};
         g_base = nullptr;
         g_label.clear();
+        g_playerCell = nullptr;
     }
 
     // How big is this thing, really? OBND (the record's own bounds) is available
@@ -215,6 +220,7 @@ namespace {
         g_handle = ghost->GetHandle();
         g_base = base;
         g_label = label;
+        g_playerCell = player->GetParentCell();
         g_fromCatalog = fromCatalog;
         // Update() swaps the ghost when the palette selection CHANGES. So even a
         // pinned catalogue entry must remember what the selection was when it was
@@ -227,6 +233,20 @@ namespace {
             label, pos.x, pos.y, pos.z, g_angle.z * kRadToDeg, g_scale,
             g_scale < 0.999f ? " (auto-scaled to ~1/9 screen; numpad 0 = real size)" : "");
         return true;
+    }
+
+    // Recreate a missing preview without treating the internal loss as the user
+    // putting it away. In particular, retain a Browser-pinned catalogue source
+    // and its temporarily forced `gh1`; Clear() intentionally gives both back.
+    bool Respawn(std::size_t selectedSlot) {
+        const bool fromCatalog = g_fromCatalog;
+        auto* base = g_base;
+        const std::string label = g_label;  // Spawn() starts by clearing the old state
+
+        Vanish();
+        if (fromCatalog && base)
+            return Spawn(base, label, true, SIZE_MAX, 1.f, RE::NiPoint3{});
+        return Preview::ShowSlot(selectedSlot);
     }
 }
 
@@ -303,8 +323,10 @@ namespace Preview {
         if (sel != g_lastSeenSel && sel != g_failedSel) {
             g_lastSeenSel = sel;
             ShowSlot(sel);
-        } else if (!Active() && !g_fromCatalog && sel != g_failedSel) {
-            ShowSlot(sel);   // entered place mode with a slot selected and no ghost yet
+        } else if (!Active() && sel != g_failedSel) {
+            // Entered place mode, or the live ref disappeared. Catalogue sources
+            // must recover too; gating this on !g_fromCatalog strands them.
+            Respawn(sel);
         }
 
         auto ref = g_handle.get();
@@ -312,15 +334,14 @@ namespace Preview {
             if (g_base) DropState();  // the ghost died with its cell — forget it
             return;
         }
-        // Walked out of the cell we were previewing in: destroy the ghost NOW, while
-        // the handle is still good. An orphan left in a cell we no longer watch is
-        // export-safe (the sentinel sees to that) but it is still a mountain standing
-        // in someone's inn. Update() runs every frame, so this fires on the first
-        // frame after the transition, long before the old cell unloads.
+        // The player walked out of the cell in which this preview was created:
+        // destroy and rebuild while the old handle is still good. Compare against
+        // the recorded PLAYER cell, not ref->GetParentCell(): following an aim hit
+        // can legitimately move the ghost itself into a neighbouring exterior cell.
         auto* player = RE::PlayerCharacter::GetSingleton();
-        if (player && ref->GetParentCell() != player->GetParentCell()) {
-            SKSE::log::info("Preview: left the cell — ghost cleared");
-            Clear();
+        if (player && g_playerCell && player->GetParentCell() != g_playerCell) {
+            SKSE::log::info("Preview: player changed cells — ghost rebuilt");
+            Respawn(sel);
             return;
         }
         if (!g_follow) return;
@@ -426,6 +447,7 @@ namespace Preview {
         g_handle = {};
         g_base = nullptr;
         g_label.clear();
+        g_playerCell = nullptr;
         g_fromCatalog = false;
         g_lastSeenSel = SIZE_MAX;
         g_failedSel = SIZE_MAX;
