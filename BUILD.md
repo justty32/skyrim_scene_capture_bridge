@@ -73,7 +73,7 @@ metadata，避免用不完整 override winner 污染顯示。順序另需與 eng
 scripts/deploy.sh          # 建完之後跑這個。不要手打 cp。
 ```
 
-**🔴 絕不用 `cp` 就地覆寫 `mods/.../SKSE/Plugins/*.dll`**——遊戲跑著的時候這麼做會讓它**無聲暴斃、沒有 crash log**（Linux 不像 Windows 會鎖住載入中的 DLL；`cp` 寫穿同一個 inode，而 DLL 程式碼頁是從該檔 demand-page 進來的）。`deploy.sh` 做兩件事：① `pgrep -f SkyrimSE.exe`，**遊戲在跑就拒絕**；② `cp → .tmp` 再 `mv`（`rename(2)` 換 inode，執行中的 mapping 不受影響）。成因全文見 [dev-env § 部署 SKSE DLL 到 MO2](../ModForge/workflows/dev-env.md)。
+**🔴 絕不用 `cp` 就地覆寫 `mods/.../SKSE/Plugins/*.dll`**——遊戲跑著的時候這麼做會讓它**無聲暴斃、沒有 crash log**（Linux 不像 Windows 會鎖住載入中的 DLL；`cp` 寫穿同一個 inode，而 DLL 程式碼頁是從該檔 demand-page 進來的）。`deploy.sh` 做兩件事：① 呼叫 `scripts/check_game_running.sh`，**遊戲在跑就拒絕**；② `cp → .tmp` 再 `mv`（`rename(2)` 換 inode，執行中的 mapping 不受影響）。偵測不用 `pgrep -f`——它掃的是完整命令列，agent 驅動時會掃到呼叫端自己而誤判（`[S]kyrimSE\.exe` 括號寫法也擋不住）；改比對 `ps -eo comm=` ＋ 檢查目標檔案是否正被 mmap。成因全文見 [dev-env § 部署 SKSE DLL 到 MO2](../ModForge/workflows/dev-env.md)。
 
 **遊戲用的是帶 esp 的 `mods/SceneCaptureBridge/`**（`SceneCaptureBridge Release/` 是備份夾）；`deploy.sh` 兩個都更新。新 DLL 要**完全關遊戲重開**才吃得到。
 
@@ -96,9 +96,14 @@ dumpbin /dependents build\release-msvc\SceneCaptureBridge.dll
 
 ## 打包（MO2 zip）
 
-```powershell
-scripts\pack.ps1                      # → dist\SceneCaptureBridge-0.0.1.zip
+```bash
+scripts/pack.sh                       # → dist/SceneCaptureBridge-0.0.1.zip
+scripts/test_packaging.sh             # 打包契約測試（fixture，不需要真的 build）
 ```
+
+`pack.sh` 預設 `--config release-clang-cl-linux`，也就是本機唯一會產出的那個。
+**`pack.ps1` 在本機打不出東西**——它的 `[ValidateSet('release-msvc','debug-msvc')]`
+不接受 clang-cl 的 config；留著只為 Windows 主機，本機一律用 `.sh` 那支。
 
 ## 本機狀態
 
