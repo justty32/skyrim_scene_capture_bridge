@@ -170,18 +170,11 @@ namespace SceneExporter {
             // The vanilla diff. A cell sweep sees EVERY reference in it, so
             // exporting all of them would make ModForge re-place the whole
             // vanilla room on top of itself (Bannered Mare: 662 refs, every
-            // chair doubled). What we want is only what the player ADDED.
-            //
-            // The discriminator is free: a ref authored in some plugin resolves
-            // to a durable id, while a ref spawned at runtime (PlaceAtMe) lives
-            // in the dynamic 0xFF...... range and has no source file. So an
-            // authored ref is pre-existing; an unresolvable one is player-placed.
-            //
-            // LIMITATION: a vanilla ref the player MOVED/SCALED is skipped here.
-            // Capturing that means emitting an override of the existing ref, not
-            // a new placement — a different scene.json shape the contract does
-            // not model yet (only `removals[]` touches existing refs). Deliberate
-            // MVP cut, not an oversight.
+            // chair doubled). Authored refs resolve to durable ids and are not
+            // new placements: the registries route erased refs to `removals[]`
+            // and moved/scaled refs to `overrides[]`; untouched refs are skipped.
+            // A dynamic id alone does not prove player ownership — the ownership
+            // gate below emits only refs recorded by Palette::PlacedInfoFor.
             if (auto refId = ResolveDurableId(&ref)) {
                 // A ref marked by the eraser is not "pre-existing kept as-is" —
                 // it exports through removals[], counted separately. Same for a
