@@ -29,4 +29,7 @@ set(sources ${sources}
     src/KeyIni.cpp
     src/Console.cpp
     src/CoSave.cpp
+    src/CoSave.Settings.cpp
+    src/CoSave.Registries.cpp
+    src/CoSave.Captures.cpp
 )

@@ -23,4 +23,5 @@ set(headers ${headers}
     src/KeyIni.h
     src/Console.h
     src/CoSave.h
+    src/CoSave.Internal.h
 )
