@@ -16,6 +16,9 @@ set(sources ${sources}
     src/Referrer.cpp
     src/Requires.cpp
     src/SceneExporter.cpp
+    src/SceneExporter.Placements.cpp
+    src/SceneExporter.Registries.cpp
+    src/SceneExporter.Captures.cpp
     src/UI.cpp
     src/UI.Browser.cpp
     src/UI.Fields.cpp

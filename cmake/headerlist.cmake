@@ -16,6 +16,7 @@ set(headers ${headers}
     src/Referrer.h
     src/Requires.h
     src/SceneExporter.h
+    src/SceneExporter.Internal.h
     src/UI.h
     src/UI.Fields.h
     src/Modes.h
