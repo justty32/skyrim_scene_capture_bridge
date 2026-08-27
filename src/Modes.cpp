@@ -195,8 +195,17 @@ namespace Modes {
             // otherwise "I edited the ini and nothing changed" would be a silent
             // mystery whenever an older save carried a different key.
             if (scancode != Bind(m)) {
+                // 🔴 KeyName() hands back a pointer into ONE shared static buffer
+                // for any scancode that is not in kKeyTable — which is exactly the
+                // raw hex/decimal binds the ini's escape hatch accepts. Two
+                // KeyName() calls in the SAME statement therefore both end up
+                // pointing at that one buffer, and both print whatever the second
+                // call wrote: this line would claim the two keys are identical at
+                // the very moment it exists to report that they differ. Copy the
+                // first out before asking for the second.
+                const std::string fromCoSave = KeyName(scancode);
                 SKSE::log::info("Modes: co-save bind {} for {} ignored — the ini says {}",
-                    KeyName(scancode), Name(m), KeyName(Bind(m)));
+                    fromCoSave, Name(m), KeyName(Bind(m)));
             }
             return;
         }
@@ -297,6 +306,11 @@ namespace Modes {
     const char* KeyName(std::uint32_t scancode) {
         for (const auto& r : kKeyTable)
             if (r.code == scancode) return r.name;
+        // 🔴 ONE SHARED BUFFER. A table hit returns a static string literal and is
+        // safe forever, but this fallback (any raw scancode the ini's hex/decimal
+        // escape hatch allows) returns the same address every time. NEVER call
+        // KeyName() twice in one expression: the second call overwrites what the
+        // first returned before either is read. Copy to a std::string first.
         static char buf[16];
         std::snprintf(buf, sizeof(buf), "0x%X", scancode);
         return buf;

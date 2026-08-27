@@ -136,6 +136,10 @@ namespace Modes {
 
     // Short scancode label ("F11", "numpad 5", "0x2A") and its inverse — the
     // ini writes/reads these names, so a player never types a raw scancode.
+    //
+    // 🔴 The "0x2A" form comes out of ONE shared static buffer, so the returned
+    // pointer is only valid until the NEXT KeyName() call. One call per
+    // expression; copy to a std::string if you need two.
     [[nodiscard]] const char* KeyName(std::uint32_t scancode);
     // "F11" / "numpad 5" / "0x57" / "87" -> scancode; 0 when unrecognised.
     // Case- and space-insensitive ("NumPad5" == "numpad 5").

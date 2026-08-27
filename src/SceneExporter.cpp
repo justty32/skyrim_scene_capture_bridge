@@ -256,10 +256,42 @@ namespace SceneExporter {
         const std::string& stem, std::string_view ext) {
         std::error_code ec;
         auto path = dir / (stem + std::string(ext));
-        for (int n = 2; std::filesystem::exists(path, ec) && n < 100; ++n) {
+        if (!std::filesystem::exists(path, ec)) return path;
+
+        // Numbered suffixes are the readable form, and they are what the old
+        // loop produced — but that loop tested `exists(path) && n < 100` and so
+        // ran out of numbers SILENTLY, returning `<stem>-99<ext>` whether or not
+        // that name was free. Every caller opens what we return with
+        // std::ios::trunc, so the 100th export of one cell inside one minute ATE
+        // the 99th — the exact bug this function exists to prevent (and the
+        // minute-resolution stamp in `stem` is what makes a run of collisions
+        // possible at all: a scripted `sc export` loop shares one stem).
+        //
+        // Every `return` below has just been checked to name a file that does
+        // not exist, so no path this function hands out can clobber an earlier
+        // export.
+        for (int n = 2; n < 100; ++n) {
             path = dir / std::format("{}-{}{}", stem, n, ext);
+            if (!std::filesystem::exists(path, ec)) return path;
         }
-        return path;
+
+        // Out of numbers. Fall back to a suffix `stem` cannot already carry:
+        // whole seconds (the stamp only goes to the minute) plus a per-session
+        // serial, so two calls in the same second still differ.
+        static std::uint32_t serial = 0;
+        for (int n = 0; n < 1000; ++n) {
+            path = dir / std::format("{}-{}-{}{}", stem,
+                static_cast<std::int64_t>(std::time(nullptr)), ++serial, ext);
+            if (!std::filesystem::exists(path, ec)) return path;
+        }
+
+        // ~1100 taken names for a single stem: something is badly wrong. Fail
+        // CLOSED. An empty path makes the caller's ofstream fail to open, which
+        // it already logs and returns from — this export is lost, but every
+        // earlier one survives, and that is the trade this function is for.
+        SKSE::log::error("UniquePath: no free name for '{}{}' in {} — refusing to "
+            "write rather than overwrite an earlier export", stem, ext, dir.string());
+        return {};
     }
 
     void ExportPlayerCellToFile() {
