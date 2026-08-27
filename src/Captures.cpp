@@ -59,15 +59,7 @@ namespace {
         if (auto id = SceneExporter::ResolveDurableId(ench)) e.enchantBase = *id;
     }
 
-    // Read a captured actor's TESNPC appearance/identity into the entry. Unique
-    // check is the caller's — this just harvests. (See header caveat: whether the
-    // TESNPC reflects a live-override tool like PROTEUS is IN-GAME TBD.)
-    bool ReadNpc(Captures::Entry& e, RE::TESObjectREFR* ref) {
-        auto* actor = ref->As<RE::Actor>();
-        auto* npc = actor ? actor->GetActorBase() : nullptr;
-        if (!npc) return false;
-        auto& n = e.npc;
-
+    void ReadNpcAppearance(Captures::NpcData& n, RE::Actor* actor, RE::TESNPC* npc) {
         if (auto* race = npc->GetRace()) {
             if (auto id = SceneExporter::ResolveDurableId(race)) n.race = *id;
         }
@@ -122,7 +114,9 @@ namespace {
             for (int i = 0; i < RE::TESNPC::FaceData::Morphs::kUnk; ++i) n.morphs.push_back(npc->faceData->morphs[i]);
             for (std::int32_t p : npc->faceData->parts) n.parts.push_back(p);
         }
+    }
 
+    void ReadNpcPerks(Captures::NpcData& n, RE::Actor* actor, RE::TESNPC* npc) {
         // Perks. An ordinary NPC carries them on its base's BGSPerkRankArray; the PLAYER's
         // base array is EMPTY — every perk the player ever took lives in PlayerCharacter's
         // runtime `addedPerks`. Same durable id + rank either way.
@@ -177,7 +171,9 @@ namespace {
             for (auto* pr : pc->GetPlayerRuntimeData().addedPerks)
                 if (pr) addPerk(pr->perk, pr->currentRank);
         }
+    }
 
+    void ReadNpcStatsAndEffects(Captures::NpcData& n, RE::Actor* actor) {
         // EXPLICIT stats (all actors, not just the player). Capturing them lets ModForge write
         // DNAM straight and skip autoCalcStats — which only ESTIMATES H/M/S from class+level.
         // Skills are AV 6..23 in engine order = Mutagen's Skill enum order (OneHanded..
@@ -228,7 +224,9 @@ namespace {
                 }
             }
         }
+    }
 
+    void ReadNpcBehavior(Captures::NpcData& n, RE::Actor* actor, RE::TESNPC* npc) {
         // Class + effective level: what ModForge needs to autoCalc believable
         // stats (a class-less NPC_ with autoCalc computes ~0 HP).
         if (auto* cls = npc->npcClass) {
@@ -254,7 +252,10 @@ namespace {
         if (auto* se = npc->actorEffects; se && se->spells)
             for (std::uint32_t k = 0; k < se->numSpells; ++k) addSpell(se->spells[k]);
         for (auto* sp : actor->GetActorRuntimeData().addedSpells) addSpell(sp);
+    }
 
+    void ReadNpcInventoryAndPlacement(Captures::NpcData& n, RE::Actor* actor,
+                                      RE::TESObjectREFR* ref) {
         // Equipped: worn armour from the inventory + whatever the hands hold.
         // This dresses the clone even when defaultOutfit is a runtime shell
         // (PROTEUS template records are empty on disk).
@@ -294,6 +295,22 @@ namespace {
         const auto anchor = SceneExporter::AnchorOf(ref);
         n.cellOrWs = anchor.id;
         n.isInterior = anchor.interior;
+    }
+
+    // Read a captured actor's TESNPC appearance/identity into the entry. Unique
+    // check is the caller's — this just harvests. (See header caveat: whether the
+    // TESNPC reflects a live-override tool like PROTEUS is IN-GAME TBD.)
+    bool ReadNpc(Captures::Entry& e, RE::TESObjectREFR* ref) {
+        auto* actor = ref->As<RE::Actor>();
+        auto* npc = actor ? actor->GetActorBase() : nullptr;
+        if (!npc) return false;
+        auto& n = e.npc;
+
+        ReadNpcAppearance(n, actor, npc);
+        ReadNpcPerks(n, actor, npc);
+        ReadNpcStatsAndEffects(n, actor);
+        ReadNpcBehavior(n, actor, npc);
+        ReadNpcInventoryAndPlacement(n, actor, ref);
         return true;
     }
 
