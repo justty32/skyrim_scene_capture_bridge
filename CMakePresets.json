@@ -145,7 +145,7 @@
                 "clang-cl-linux"
             ],
             "displayName": "Release (clang-cl, Linux host)",
-            "description": "Cross-compile on Linux to Windows x64 via clang-cl + lld-link + xwin. Compile-verification only; shipping DLLs still go through Windows CI.",
+            "description": "Cross-compile on Linux to Windows x64 via clang-cl + lld-link + xwin; the only supported build and shipping path.",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/release-clang-cl-linux",
             "cacheVariables": {

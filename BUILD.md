@@ -67,6 +67,12 @@ metadata，避免用不完整 override winner 污染顯示。順序另需與 eng
 交錯順序，不使用兩個 compiled array 拼接。MO2 VFS 內檔案的 SHA-256 尚未 runtime
 核對；UI 會保留限制提示。
 
+`catalog_compatibility_probe` 是需要真實 catalog 與 load order 的手動診斷工具，因此不註冊為 CTest：
+```bash
+build/tests-native/catalog_compatibility_probe /path/to/scene-catalog.json /path/to/plugins.txt
+```
+第二個參數可直接使用 MO2 `plugins.txt`（支援 CRLF、`#` 註解行與開頭的 `*` 啟用前綴）。
+
 ## 部署到 MO2（開發迭代）
 
 ```bash
@@ -81,7 +87,7 @@ scripts/deploy.sh          # 建完之後跑這個。不要手打 cp。
 
 **不要丟進 MO2 的 `overwrite/`**：那是傾倒區，plugin 擺在那裡幾乎不可見、會被「清空 overwrite」沖掉。用真的 mod 資料夾，開關權留給 MO2 的勾選框。改完 DLL 後 MO2 要 F5 refresh 才看得到新資料夾。
 
-## Manjaro（clang-cl 跨編譯，僅驗證）
+## Manjaro（clang-cl 跨編譯，唯一支援的建置與出貨路徑）
 
 ```bash
 cmake --preset build-release-clang-cl-linux && cmake --build build/release-clang-cl-linux
@@ -89,10 +95,10 @@ cmake --preset build-release-clang-cl-linux && cmake --build build/release-clang
 
 ## 驗證 standalone
 
-```powershell
-dumpbin /dependents build\release-msvc\SceneCaptureBridge.dll
+```bash
+llvm-readobj --coff-imports build/release-clang-cl-linux/SceneCaptureBridge.dll
 ```
-不該出現 `MSVCP140.dll` / `VCRUNTIME140*.dll`（出現 → 砍 `build/` 重來）。CI 自動跑此檢查。
+不該出現 `MSVCP140.dll` / `VCRUNTIME140*.dll`（出現 → 砍 `build/` 重來）。2026-09-05 實測 import 表只有 `KERNEL32.dll`／`ole32.dll`／`SHELL32.dll`／`USER32.dll`／`VERSION.dll`，`MSVCP`／`VCRUNTIME` 命中數為 0。
 
 ## 打包（MO2 zip）
 
