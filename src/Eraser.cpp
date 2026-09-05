@@ -73,9 +73,11 @@ namespace Eraser {
             return MarkResult::kMarked;
         }
 
-        // Dynamic ref = something the player placed this session. True
-        // deletion semantics: disable, drop from every registry, no trace.
+        // Dynamic ref = something the player placed this session. Its registry
+        // row remains, but export skips it via SceneExporter.Placements.cpp's
+        // ref.IsDisabled() guard.
         ref->Disable();
+        ref->SetDelete(true);
         SKSE::log::info("Eraser: own dynamic ref erased (no trace)");
         return MarkResult::kOwnDeleted;
     }
