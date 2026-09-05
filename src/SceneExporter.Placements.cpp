@@ -10,12 +10,6 @@
 
 #include "log.h"
 
-namespace {
-    // InitiallyDisabled record flag (bit 0x800) — a ref authored to spawn
-    // disabled. We export this so ModForge round-trips the enable state.
-    constexpr std::uint32_t kInitiallyDisabled = 0x00000800u;
-}
-
 namespace SceneExporter {
 
     // Sweep ONE cell's placed refs (the vanilla diff) and append the
@@ -200,12 +194,19 @@ namespace SceneExporter {
                 {"z", ang.z * kRadToDeg},
             };
 
-            // Carry scale + the InitiallyDisabled state so ModForge reproduces
-            // both. (Actors never get here — see the scope check above.)
+            // Carry scale. (Actors never get here — see the scope check above.)
+            //
+            // NO `initiallyDisabled` HERE, and it is not an omission: a ref with
+            // the InitiallyDisabled record flag (0x800) can never reach this
+            // line. `TESObjectREFR::IsDisabled()` IS `GetFormFlags() & 0x800`,
+            // and the disabled check above returns kContinue on exactly that
+            // bit. Code that re-tested the flag here used to sit below, dead
+            // since the initial import, under a comment claiming a round-trip
+            // that never happened. Disabled authored refs leave through
+            // `removals[]` (the Eraser registry); disabled refs of our own are
+            // true deletions and leave no trace — that is the 2026-07-12
+            // user-decided semantics, not something to round-trip.
             entry["scale"] = ref.GetScale();
-            if ((ref.GetFormFlags() & kInitiallyDisabled) != 0) {
-                entry["initiallyDisabled"] = true;
-            }
             scene["placements"].push_back(std::move(entry));
             return RE::BSContainer::ForEachResult::kContinue;
         });
