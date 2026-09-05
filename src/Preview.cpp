@@ -278,7 +278,16 @@ namespace Preview {
     bool ShowSlot(std::size_t index) {
         auto& slots = Palette::All();
         if (index >= slots.size() || !slots[index].base) {
+            // Take the OLD ghost down first. Returning early left the previous
+            // one standing while the selection had already moved on: Active()
+            // stays true, so Modes' action key routes to Preview::Commit()
+            // (Modes.cpp:117) and places the object you are looking at — which
+            // is no longer the one you selected. A silent wrong placement is
+            // worse than no ghost, and the user only had a log line to go on.
+            Vanish();
             g_failedSel = index;   // remember, so Update() doesn't retry every frame
+            SKSE::log::warn("Preview: slot {} is unavailable — no ghost", index);
+            RE::DebugNotification("SCB: that slot's plugin isn't loaded — no ghost");
             return false;
         }
         const auto& s = slots[index];
