@@ -92,7 +92,7 @@ namespace Preview {
     // pressed five times. Returns false when there is nothing to commit.
     bool Commit();
 
-    // kPostLoadGame: delete any orphan ghost the loaded save is carrying.
+    // kPostLoadGame: delete orphan ghosts found in the player's current cell.
     std::size_t SweepOrphans();
 
     void DropState();  // co-save revert: forget the handle; the world is being replaced

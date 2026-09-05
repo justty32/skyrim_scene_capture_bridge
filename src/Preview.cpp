@@ -478,7 +478,10 @@ namespace Preview {
     std::size_t SweepOrphans() {
         auto* player = RE::PlayerCharacter::GetSingleton();
         RE::TESObjectCELL* cell = player ? player->GetParentCell() : nullptr;
-        if (!cell) return 0;
+        if (!cell) {
+            SKSE::log::warn("Preview: cannot sweep orphan ghosts — player has no parent cell");
+            return 0;
+        }
         std::vector<RE::TESObjectREFR*> doomed;
         cell->ForEachReference([&](RE::TESObjectREFR* ref) -> RE::BSContainer::ForEachResult {
             if (ref && !ref->IsDeleted() && HasSentinel(ref)) doomed.push_back(ref);
