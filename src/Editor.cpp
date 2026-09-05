@@ -343,7 +343,13 @@ namespace Editor {
         if (!g.active) return;
         if (auto ref = Target()) {
             Apply(ref.get(), g.origPos, g.origAngle);
-            if (!g.isActor) ref->SetScale(g.origScale);
+            // SetScale needs its own Update3DPosition: Apply()'s one already ran,
+            // so without this the visual keeps the edited size and only the
+            // record is restored. Both sibling restore paths get this right —
+            // numpad 5's revert and Nudge()'s scale branch — Cancel() was the
+            // one that missed it, while Editor.h:56 promises "restore the
+            // original transform".
+            if (!g.isActor) { ref->SetScale(g.origScale); ref->Update3DPosition(true); }
             SKSE::log::info("Editor: cancelled — transform restored");
         }
         ReleasePhysics();
