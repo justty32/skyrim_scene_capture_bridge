@@ -313,7 +313,15 @@ namespace Preview {
         const bool want = Modes::Current() == Modes::Mode::kPlace &&
             Modes::Ghost(Modes::Mode::kPlace);
         if (!want) {
-            if (g_base) Clear();
+            // `g_ghostForced` too, not just `g_base`: the Browser's borrowed gh1
+            // must come back even when the ghost is already gone. Two paths get
+            // there — DropState() below (the ghost died with its cell) clears
+            // g_base but not the borrow, and ForceGhostOn() followed by a
+            // ShowBase() that fails never sets g_base at all. Without this, a
+            // user who had `gh0` is switched to `gh1` permanently, and SETT v8
+            // writes that into the co-save for every later load. Clear() is
+            // already safe with no ghost up (Vanish() checks the handle).
+            if (g_base || g_ghostForced) Clear();
             return;
         }
 
