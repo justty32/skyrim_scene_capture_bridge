@@ -334,6 +334,17 @@ namespace Preview {
             return;
         }
 
+        // A slot that failed once is not retried every frame — but "failed" has to
+        // keep meaning "still unshowable". g_failedSel was only ever cleared by a
+        // successful Spawn(), so once a slot failed, refilling THAT SAME INDEX
+        // with a working base (eyedropper after a Remove, `load from file`) left
+        // the ghost permanently suppressed: the user had to select another slot
+        // and come back. Re-check the slot instead of trusting the old verdict.
+        if (g_failedSel != SIZE_MAX) {
+            const auto& slots = Palette::All();
+            if (g_failedSel >= slots.size() || slots[g_failedSel].base) g_failedSel = SIZE_MAX;
+        }
+
         // SOURCE. Changing the palette selection always takes the ghost — even off
         // a catalogue entry the Browser pinned (you just told us what you want).
         const auto sel = Palette::SelectedIndex();
