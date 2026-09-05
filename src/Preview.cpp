@@ -418,6 +418,27 @@ namespace Preview {
         s.base = g_base;
         s.angle = ref->data.angle;
         s.scale = ref->GetScale();
+        // A palette-sourced ghost commits the WHOLE slot, not just its pose. A
+        // Slot is more than base+transform: `extra` is the instance data `sc pk
+        // ed1` picked up (the enchantment that makes the export MINT a
+        // capturedItems[] record) and `isActor` is what stops PlaceSlot writing
+        // XSCL onto an ACHR. Building a bare Slot here dropped both, so
+        // `sc pl ed1` did nothing whenever a ghost was up — and gh1 is the
+        // DEFAULT, so that was the normal case, silently. Palette.h says both
+        // place paths end in PlaceSlot precisely so they cannot diverge.
+        //
+        // Match on the base POINTER, not just the index: the selection index can
+        // point at a different slot than the one the ghost was built from.
+        // Catalogue-sourced ghosts have no slot and correctly carry nothing.
+        if (!g_fromCatalog && g_lastSeenSel < Palette::All().size()) {
+            const auto& src = Palette::All()[g_lastSeenSel];
+            if (src.base == g_base) {
+                s.note = src.note;
+                s.isActor = src.isActor;
+                s.addsMaster = src.addsMaster;
+                s.extra = src.extra;
+            }
+        }
         const RE::NiPoint3 pos = ref->GetPosition();
 
         if (!Palette::PlaceSlot(s, &pos)) return false;
