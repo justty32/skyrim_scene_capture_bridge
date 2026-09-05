@@ -38,8 +38,11 @@ namespace Physics {
     // change itself succeeds; the cap stops a never-loading ref from spinning.
     void FreezeDeferred(RE::ObjectRefHandle handle, int retries = 60);
 
-    // Hand the object back to havok (it will settle). Returns false when there
-    // was nothing to release.
+    // Hand the object back to havok (it will settle). Returns whether the motion
+    // change actually took: false for a null ref, and false when the rigid body
+    // refused kDynamic (same distinction FreezeDeferred relies on — 3D root and
+    // child bodies do not become ready on the same frame). A false here means the
+    // object is STILL keyframed and will not settle; do not tell the user it will.
     bool Release(RE::TESObjectREFR* ref);
 
 }  // namespace Physics

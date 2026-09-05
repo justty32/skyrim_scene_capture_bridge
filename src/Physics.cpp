@@ -43,8 +43,11 @@ namespace Physics {
 
     bool Release(RE::TESObjectREFR* ref) {
         if (!ref) return false;
-        ref->SetMotionType(RE::hkpMotion::MotionType::kDynamic, true);
-        return true;
+        // Propagate the motion change's own result. Discarding it here was the
+        // same mistake the 2026-08-25 ghost-spin investigation pinned on
+        // FreezeDeferred (treating "the call was made" as "the call worked");
+        // that half got fixed, this twin did not.
+        return ref->SetMotionType(RE::hkpMotion::MotionType::kDynamic, true);
     }
 
 }  // namespace Physics

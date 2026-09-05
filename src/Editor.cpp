@@ -66,8 +66,12 @@ namespace {
         if (!g.frozen) return;
         if (g.keepFrozen) {
             SKSE::log::info("Editor: physics remains frozen — original py0 placement");
-        } else if (auto ref = Target(); ref && Physics::Release(ref.get())) {
-            SKSE::log::info("Editor: physics restored — the object will settle");
+        } else if (auto ref = Target()) {
+            if (Physics::Release(ref.get()))
+                SKSE::log::info("Editor: physics restored — the object will settle");
+            else
+                SKSE::log::warn("Editor: physics NOT restored — the rigid body refused "
+                    "kDynamic; the object stays frozen where it is");
         }
         g.frozen = false;
     }
