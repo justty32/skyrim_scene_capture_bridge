@@ -161,10 +161,9 @@ namespace {
         }
     }
 
-    // Spawn the ghost for `base`. Pose carries over from the previous ghost's
-    // rotation (you spent effort on that angle; swapping the object should not
-    // throw it away) but the SCALE is recomputed — it is a property of how big
-    // this particular thing is, not of what you were looking at before.
+    // Spawn the ghost for `base`. Its angle comes from the slot/catalog source
+    // supplied by the caller (catalog callers use zero), while SCALE is recomputed
+    // because it belongs to this particular object rather than the previous ghost.
     bool Spawn(RE::TESBoundObject* base, const std::string& label, bool fromCatalog,
         std::size_t slotIndex, float slotScale, const RE::NiPoint3& slotAngle) {
         auto* player = RE::PlayerCharacter::GetSingleton();
