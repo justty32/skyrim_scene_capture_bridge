@@ -73,7 +73,7 @@ metadata，避免用不完整 override winner 污染顯示。順序另需與 eng
 scripts/deploy.sh          # 建完之後跑這個。不要手打 cp。
 ```
 
-**🔴 絕不用 `cp` 就地覆寫 `mods/.../SKSE/Plugins/*.dll`**——遊戲跑著的時候這麼做會讓它**無聲暴斃、沒有 crash log**（Linux 不像 Windows 會鎖住載入中的 DLL；`cp` 寫穿同一個 inode，而 DLL 程式碼頁是從該檔 demand-page 進來的）。`deploy.sh` 做兩件事：① 呼叫 `scripts/check_game_running.sh`，**遊戲在跑就拒絕**；② `cp → .tmp` 再 `mv`（`rename(2)` 換 inode，執行中的 mapping 不受影響）。偵測不用 `pgrep -f`——它掃的是完整命令列，agent 驅動時會掃到呼叫端自己而誤判（`[S]kyrimSE\.exe` 括號寫法也擋不住）；改比對 `ps -eo comm=` ＋ 檢查目標檔案是否正被 mmap。成因全文見 [dev-env § 部署 SKSE DLL 到 MO2](../ModForge/workflows/dev-env.md)。
+**🔴 絕不用 `cp` 就地覆寫 `mods/.../SKSE/Plugins/*.dll`**——遊戲跑著的時候這麼做會讓它**無聲暴斃、沒有 crash log**（Linux 不像 Windows 會鎖住載入中的 DLL；`cp` 寫穿同一個 inode，而 DLL 程式碼頁是從該檔 demand-page 進來的）。`deploy.sh` 做兩件事：① 呼叫 `scripts/check_game_running.sh`，**遊戲在跑就拒絕**；② `cp → .tmp` 再 `mv`（`rename(2)` 換 inode，執行中的 mapping 不受影響）。偵測不用 `pgrep -f`——它掃的是完整命令列，agent 驅動時會掃到呼叫端自己而誤判（`[S]kyrimSE\.exe` 括號寫法也擋不住）。**也不能靠 `ps -eo comm=`**：2026-09-05 實測 Proton 底下 MO2 的 comm 是 `main`、SkyrimSE 是 `Main`，比對 exe 名是保證偽陰性（守門會在該擋的時候放行）。現在的主訊號是掃 `/proc/*/maps` 裡的**映射檔路徑**找 `SkyrimSE.exe`／`skse64_loader.exe`／`ModOrganizer.exe`，外加原本就有的「目標 DLL 是不是正被 mmap」；映射路徑是核心從 inode 反查的檔名、不是命令列，所以同時免疫自我匹配與 wine 改名。契約測試 `scripts/test_game_detection.sh`（6 條，fixture，不需要真的遊戲）。成因全文見 [dev-env § 部署 SKSE DLL 到 MO2](../ModForge/workflows/dev-env.md)。
 
 **遊戲用的是帶 esp 的 `mods/SceneCaptureBridge/`**（`SceneCaptureBridge Release/` 是備份夾）；`deploy.sh` 兩個都更新。新 DLL 要**完全關遊戲重開**才吃得到。
 
@@ -99,6 +99,7 @@ dumpbin /dependents build\release-msvc\SceneCaptureBridge.dll
 ```bash
 scripts/pack.sh                       # → dist/SceneCaptureBridge-0.0.1.zip
 scripts/test_packaging.sh             # 打包契約測試（fixture，不需要真的 build）
+scripts/test_game_detection.sh        # 部署守門的偵測契約測試（fixture，不需要遊戲）
 ```
 
 `pack.sh` 預設 `--config release-clang-cl-linux`，也就是本機唯一會產出的那個。
