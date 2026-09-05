@@ -39,22 +39,21 @@ namespace {
     // kKeyframed). Fallback: vanilla SummonTargetFXActivator 0x0007CD55 (no
     // collision -> no E, hotkeys only) so the plugin still works without the esp.
     RE::TESBoundObject* ProxyBase() {
-        static RE::TESBoundObject* base = [] {
-            auto* dh = RE::TESDataHandler::GetSingleton();
-            RE::TESBoundObject* b = nullptr;
-            if (dh) {
-                b = dh->LookupForm<RE::TESObjectACTI>(0x800, "SceneCaptureTools.esp");
-                if (b) {
-                    SKSE::log::info("Markers: proxy base = SceneCaptureTools.esp MarkerACTI");
-                } else {
-                    b = dh->LookupForm<RE::TESObjectACTI>(0x07CD55, "Skyrim.esm");
-                    SKSE::log::info(
-                        "Markers: tooling esp absent — proxy base = vanilla "
-                        "SummonTargetFXActivator ({})", b ? "ok" : "MISSING");
-                }
+        static RE::TESBoundObject* base = nullptr;
+        if (base) return base;
+
+        auto* dh = RE::TESDataHandler::GetSingleton();
+        if (!dh) return nullptr;
+
+        base = dh->LookupForm<RE::TESObjectACTI>(0x800, "SceneCaptureTools.esp");
+        if (base) {
+            SKSE::log::info("Markers: proxy base = SceneCaptureTools.esp MarkerACTI");
+        } else {
+            base = dh->LookupForm<RE::TESObjectACTI>(0x07CD55, "Skyrim.esm");
+            SKSE::log::info(
+                "Markers: tooling esp absent — proxy base = vanilla "
+                "SummonTargetFXActivator ({})", base ? "ok" : "MISSING");
             }
-            return b;
-        }();
         return base;
     }
 }

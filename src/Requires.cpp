@@ -352,6 +352,7 @@ namespace Requires {
     const Stats& Last() { return g_last; }
 
     void ExportToFile() {
+        g_last = {};
         const auto report = Scan();
         auto dir = SKSE::log::log_directory();
         if (!dir) {

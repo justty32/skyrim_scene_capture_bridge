@@ -40,7 +40,7 @@ namespace {
 
     bool CastRay(const RE::NiPoint3& from, const RE::NiPoint3& dir,
         RE::NiPoint3& outPoint, const RE::hkpCollidable*& outCollidable,
-        bool ignorePlayer) {
+        bool placementRay) {
         outCollidable = nullptr;
         auto* player = RE::PlayerCharacter::GetSingleton();
         auto* cell = player ? player->GetParentCell() : nullptr;
@@ -52,9 +52,9 @@ namespace {
         RE::bhkPickData pick;
         bool hit = false;
         float fraction = 1.f;
-        PlacementRayCollector collector;
 
-        if (ignorePlayer) {
+        if (placementRay) {
+            PlacementRayCollector collector;
             // This is the same collector entry used by SmoothCam's own broad
             // world ray. PickObject consumes a scaled origin plus delta here.
             pick.rayInput.from = RE::hkVector4(from * scale);

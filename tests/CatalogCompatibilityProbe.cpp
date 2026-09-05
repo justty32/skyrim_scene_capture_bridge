@@ -21,6 +21,8 @@ int main(int argc, char** argv) {
         std::vector<CatalogFile::RuntimeSource> runtime;
         for (std::string line; std::getline(input, line);) {
             if (!line.empty() && line.back() == '\r') line.pop_back();
+            if (!line.empty() && line.front() == '#') continue;
+            if (!line.empty() && line.front() == '*') line.erase(line.begin());
             if (line.empty()) continue;
             runtime.push_back({std::filesystem::path(line).filename().string()});
         }

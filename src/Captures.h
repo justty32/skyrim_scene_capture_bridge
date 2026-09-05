@@ -106,7 +106,7 @@ namespace Captures {
         std::string defaultOutfit; // durable outfit id (empty if none)
         std::vector<std::string> headParts;  // durable BGSHeadPart ids
         std::vector<TintLayer> tints;
-        std::vector<float> morphs;         // faceData NAM9 (19 sliders)
+        std::vector<float> morphs;         // faceData NAM9: 18 sliders (kUnk); kTotal=19 includes a non-slider final slot
         std::vector<std::int32_t> parts;   // faceData NAMA (4 part presets)
         std::vector<PerkEntry> perks;      // base perks ＋ (player) runtime addedPerks, deduped
         std::vector<ActiveEffect> activeEffects;  // current buffs — runtime snapshot

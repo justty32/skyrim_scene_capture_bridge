@@ -1,5 +1,10 @@
 #pragma once
 
+namespace Captures {
+    struct Entry;
+    struct NpcData;
+}
+
 // CoSave internals — shared ONLY between the CoSave translation units
 // (`CoSave.cpp` and the per-record `CoSave.*.cpp` files). Nothing outside the
 // co-save layer may include this: the public contract is `CoSave.h`, which is
@@ -64,6 +69,11 @@ namespace CoSave::detail {
     void LoadPlaced(const SKSE::SerializationInterface* si, std::uint32_t version);
 
     // CoSave.Captures.cpp — 'SCCP', by far the widest layout history (v1..v10).
+    void SaveNpcPayload(const SKSE::SerializationInterface* si, const Captures::NpcData& n);
+    void LoadNpcPayload(const SKSE::SerializationInterface* si, Captures::NpcData& n,
+        std::uint32_t version);
+    void SaveItemPayload(const SKSE::SerializationInterface* si, const Captures::Entry& e);
+    void LoadItemPayload(const SKSE::SerializationInterface* si, Captures::Entry& e);
     void SaveCaptures(const SKSE::SerializationInterface* si);
     void LoadCaptures(const SKSE::SerializationInterface* si, std::uint32_t version);
 
