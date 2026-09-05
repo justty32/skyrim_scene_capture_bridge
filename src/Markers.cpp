@@ -241,9 +241,8 @@ namespace Markers {
         for (auto it = g_entries.begin(); it != g_entries.end(); ++it) {
             if (it->seq != seq) continue;
             if (auto proxy = it->proxy.get()) {
-                proxy->Disable();  // hide immediately; a dynamic disabled ref is
-                                   // engine-collected (Delete() has no CommonLibSSE
-                                   // surface — see plan verification list)
+                proxy->Disable();
+                proxy->SetDelete(true);
             }
             g_entries.erase(it);   // no trace: the true-deletion semantics
             return;
