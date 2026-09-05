@@ -500,6 +500,13 @@ namespace Palette {
     void Remove(std::size_t index) {
         if (index >= g_slots.size()) return;
         g_slots.erase(g_slots.begin() + static_cast<std::ptrdiff_t>(index));
+        // The selection is an INDEX, so erasing anything before it shifts which
+        // slot it names. Only clamping the out-of-range case left the number
+        // unchanged while it silently came to mean a different slot: Preview's
+        // Update() compares selection indices to decide whether to swap the
+        // ghost, sees no change, and keeps showing A while the action key places
+        // B. Follow the erase first, then clamp.
+        if (index < g_selected) --g_selected;
         if (g_selected >= g_slots.size() && g_selected > 0) g_selected = g_slots.size() - 1;
         Save();
     }
