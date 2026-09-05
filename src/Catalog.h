@@ -51,7 +51,7 @@ namespace Catalog {
     [[nodiscard]] std::size_t OfflineMatches();
 
     [[nodiscard]] const std::vector<Entry>& All();
-    [[nodiscard]] const std::vector<std::string>& Plugins();  // filter combo, load order order
+    [[nodiscard]] const std::vector<std::string>& Plugins();  // filter combo, alphabetical order
     [[nodiscard]] const std::vector<RE::FormType>& Types();   // only the types actually present
     [[nodiscard]] const char* TypeName(RE::FormType t);
 
