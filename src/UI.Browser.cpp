@@ -36,6 +36,9 @@ namespace {
     RE::FormType g_type = RE::FormType::None;   // None = every type
     std::string g_plugin;                        // "" = every plugin
     bool g_livePreview = true;
+    bool g_favoritesOnly = false;
+    bool g_lastFavoritesOnly = false;
+    std::uint64_t g_lastFavoriteRevision = 0;
 
     // The filter is a linear scan of the whole catalogue, so it runs when a
     // filter CHANGES, not every frame.
@@ -51,6 +54,18 @@ namespace {
         g_lastQuery = g_query;
         g_lastType = g_type;
         g_lastPlugin = g_plugin;
+        g_lastFavoritesOnly = g_favoritesOnly;
+        g_lastFavoriteRevision = UI::FavoriteRevision();
+    }
+
+    void OrderHits() {
+        const auto& favorites = UI::FavoriteStore();
+        const auto& entries = Catalog::All();
+        if (g_favoritesOnly) {
+            std::erase_if(g_hits, [&](std::size_t i) { return !favorites.Contains(entries[i].id); });
+        }
+        std::stable_partition(g_hits.begin(), g_hits.end(),
+            [&](std::size_t i) { return favorites.Contains(entries[i].id); });
     }
 
     // What a placement made from this entry is called. Statics have no name, so
@@ -122,7 +137,14 @@ void __stdcall UI::BrowserPage::Render() {
         ImGuiMCP::EndCombo();
     }
 
-    if (g_lastQuery != g_query || g_lastType != g_type || g_lastPlugin != g_plugin) Refilter();
+    ImGuiMCP::Checkbox("favorites only", &g_favoritesOnly);
+    UI::FavoriteStore();
+    if (g_lastQuery != g_query || g_lastType != g_type || g_lastPlugin != g_plugin ||
+        g_lastFavoritesOnly != g_favoritesOnly ||
+        g_lastFavoriteRevision != UI::FavoriteRevision()) {
+        Refilter();
+        OrderHits();
+    }
 
     const int shown = static_cast<int>(std::min<std::size_t>(g_hits.size(), kMaxRows));
     if (g_hits.size() > kMaxRows) {
@@ -137,7 +159,11 @@ void __stdcall UI::BrowserPage::Render() {
     for (int row = 0; row < shown; ++row) {
         const auto idx = g_hits[static_cast<std::size_t>(row)];
         const auto& e = Catalog::All()[idx];
-        ImGuiMCP::PushID(row);
+        ImGuiMCP::PushID(reinterpret_cast<const void*>(static_cast<std::uintptr_t>(idx + 1)));
+        if (ImGuiMCP::Button(UI::FavoriteStore().Contains(e.id)
+                ? "[*]##favorite" : "[ ]##favorite"))
+            UI::ToggleFavorite(e.id);  // persist now; refilter on the next frame
+        ImGuiMCP::SameLine();
         const std::string identity = e.editorId.empty() ?
             (e.name.empty() ? std::string("—") : e.name) : e.editorId;
         const std::string line = identity + "   " +

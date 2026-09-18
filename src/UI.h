@@ -12,11 +12,16 @@
 // sub_projs/mod-survey/findings/skse-menu-framework-3.md.
 
 #include <cstdint>
+#include "Favorites.h"
 
 namespace UI {
 
     // Register the panel. Safe to call when the framework is absent (no-op).
     void Register();
+
+    const Favorites& FavoriteStore();
+    void ToggleFavorite(const std::string& id);
+    std::uint64_t FavoriteRevision();
 
     // "Mode: <name>" + separator — every page calls it first so the current
     // mode is always in sight (P5).

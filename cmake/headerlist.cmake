@@ -10,6 +10,7 @@ set(headers ${headers}
     src/Palette.h
     src/Catalog.h
     src/CatalogFile.h
+    src/Favorites.h
     src/Numpad.h
     src/Preview.h
     src/Physics.h

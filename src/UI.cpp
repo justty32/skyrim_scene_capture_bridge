@@ -17,6 +17,14 @@
 #include <string>
 
 namespace {
+    Favorites g_favorites;
+    std::uint64_t g_favoriteRevision = 0;
+
+    std::filesystem::path FavoritesPath() {
+        auto dir = SKSE::log::log_directory();
+        return dir ? (*dir / "scene-capture-favorites.json") : std::filesystem::path{};
+    }
+
     // Bound-field slot ids (UI.Fields): unique per field per page, and they
     // double as the ImGui label. Rows keyed by seq (captures) or by a hash of
     // the durable id (eraser/overrides) — NOT by list position, which shifts
@@ -53,6 +61,26 @@ namespace {
         return "exterior (unresolvable)";
     }
 }
+
+const Favorites& UI::FavoriteStore() {
+    static const bool loaded = [] {
+        g_favorites.LoadFrom(FavoritesPath());
+        SKSE::log::info("Favorites: loaded {} base id(s) (empty if missing or invalid)",
+            g_favorites.Count());
+        return true;
+    }();
+    (void)loaded;
+    return g_favorites;
+}
+
+void UI::ToggleFavorite(const std::string& id) {
+    FavoriteStore();
+    g_favorites.Toggle(id);
+    g_favorites.SaveTo(FavoritesPath());
+    ++g_favoriteRevision;
+}
+
+std::uint64_t UI::FavoriteRevision() { return g_favoriteRevision; }
 
 void UI::Register() {
     if (!SKSEMenuFramework::IsInstalled()) {
@@ -401,11 +429,22 @@ void __stdcall UI::PalettePage::Render() {
     ImGuiMCP::Separator();
 
     std::size_t removeIdx = SIZE_MAX;
-    // Newest first — the slot you just eyedropped is the one you want to name.
-    for (std::size_t n = 0; n < slots.size(); ++n) {
-        const std::size_t i = slots.size() - 1 - n;
+    // Keep newest-first order within both favorite and non-favorite groups.
+    std::vector<std::string> ids;
+    std::vector<std::size_t> order;
+    for (std::size_t i = 0; i < slots.size(); ++i) {
+        ids.push_back(slots[i].baseId);
+        order.push_back(slots.size() - 1 - i);
+    }
+    order = UI::FavoriteStore().OrderFavoritesFirst(ids, std::move(order));
+    for (const auto i : order) {
         auto& s = slots[i];
         ImGuiMCP::PushID(reinterpret_cast<const void*>(static_cast<std::uintptr_t>(i + 1)));
+
+        if (ImGuiMCP::Button(UI::FavoriteStore().Contains(s.baseId)
+                ? "[*]##favorite" : "[ ]##favorite"))
+            UI::ToggleFavorite(s.baseId);
+        ImGuiMCP::SameLine();
 
         const bool selected = (i == ::Palette::SelectedIndex());
         if (ImGuiMCP::Button(selected ? "[use]" : " use ")) ::Palette::Select(i);

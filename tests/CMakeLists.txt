@@ -69,3 +69,18 @@ else()
     message(STATUS
         "ModForge catalog contract test disabled: dotnet or sibling ModForge checkout not found")
 endif()
+
+add_executable(favorites_tests
+    FavoritesTests.cpp
+    ../src/Favorites.cpp
+)
+target_compile_features(favorites_tests PRIVATE cxx_std_23)
+target_include_directories(favorites_tests PRIVATE ../src)
+target_link_libraries(favorites_tests PRIVATE nlohmann_json::nlohmann_json)
+if(MSVC)
+    target_compile_options(favorites_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(favorites_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME favorites_tests COMMAND favorites_tests)

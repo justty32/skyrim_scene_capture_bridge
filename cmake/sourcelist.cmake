@@ -10,6 +10,7 @@ set(sources ${sources}
     src/Palette.Placed.cpp
     src/Catalog.cpp
     src/CatalogFile.cpp
+    src/Favorites.cpp
     src/Numpad.cpp
     src/Preview.cpp
     src/Physics.cpp
