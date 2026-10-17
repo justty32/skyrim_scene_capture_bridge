@@ -9,7 +9,7 @@
 - **類型**：基石聯動（它的 output 契約 = ModForge 的 input；兩者靠 scene.json 協議接，不整合）
 - **契約權威**：scene.json 的每個欄位對映**既有 ModForge spec 型別**，本 repo **只擁有 output 形狀**，生成端全在 ModForge。契約定義見 [spec §契約](../ModForge/workflows/specs/ingame-scene-export-design.md)。
 - **建置**：[BUILD.md](BUILD.md)（C++23 + CommonLibSSE-NG + vcpkg + CMake presets；靜態 CRT standalone DLL）
-- **離線 catalog consumer（已完成；portable suite 2/2 PASS）**：把 ModForge `scene-catalog.json` v1 放到 SKSE 資料目錄（與 `scene-capture-palette.json`、匯出檔同層），下次啟動時 Browser 會按 durable FormKey 補 EditorID 與 runtime 缺少的名稱，納入搜尋/顯示。`Catalog.cpp` 已接上載入、compatibility gate 與 metadata merge，`CatalogFile.cpp` 是不依賴 SKSE 的 portable parser；`catalog_file_tests` 與 `modforge_catalog_contract` 均通過。catalog 必須由**完整 resolved load order** 建立：來源集合與 engine `TESDataHandler::files` 過濾出的 loaded global sequence（full + light）需完全一致，且 provenance/record cross-reference 合法；否則整份忽略並安全退回 runtime-only。離線資料只是 metadata，不會增加遊戲未載入的 form，也不取代 runtime name/model。SHA-256 仍未 runtime 核對，Browser 會明示。
+- **離線 catalog consumer（已完成；portable suite 3/3 PASS，2026-10-17 含 `favorites_tests`）**：把 ModForge `scene-catalog.json` v1 放到 SKSE 資料目錄（與 `scene-capture-palette.json`、匯出檔同層），下次啟動時 Browser 會按 durable FormKey 補 EditorID 與 runtime 缺少的名稱，納入搜尋/顯示。`Catalog.cpp` 已接上載入、compatibility gate 與 metadata merge，`CatalogFile.cpp` 是不依賴 SKSE 的 portable parser；`catalog_file_tests` 與 `modforge_catalog_contract` 均通過。catalog 必須由**完整 resolved load order** 建立：來源集合與 engine `TESDataHandler::files` 過濾出的 loaded global sequence（full + light）需完全一致，且 provenance/record cross-reference 合法；否則整份忽略並安全退回 runtime-only。離線資料只是 metadata，不會增加遊戲未載入的 form，也不取代 runtime name/model。SHA-256 仍未 runtime 核對，Browser 會明示。
 - **狀態**：✅ **P1–P6 核心功能已存在**；部分 post-P6／ghost 回歸仍 open，不能視為全部實機驗收完畢。面板：F1 → `Scene Capture Bridge`。驗收明細見 [landed/world.md](../ModForge/workflows/feature-dev/landed/world.md)；未驗項以本 repo 的 [ghost spin 調查](GHOST_SPIN_INVESTIGATION_2026-08-25.md)、[ghost cell clear 調查](GHOST_CELL_CLEAR_INVESTIGATION_2026-08-26.md)與[下方待實機清單](#尚無實機驗收記錄2026-09-05)為準。ModForge 側的 `wait_todo` 尚未同步，待該 repo 的線補。
 
 ## 建置架構來源
@@ -190,7 +190,7 @@ referrer = F11
 
 ## 尚未做（依 spec 里程碑）
 
-- **A 線仍有三項工作**：A1 是唯一的**未知技術 spike**（`Inventory3DManager` 面板內真 3D 預覽）；A2「施法即編輯」尚無 `TESSpellCastEvent` 實體；A3 favorite UI（加入最愛語意、星號／置頂）也尚無實體。A1 不是唯一未做工作。
+- **A 線仍有兩項工作**：A1 是唯一的**未知技術 spike**（`Inventory3DManager` 面板內真 3D 預覽）；A2「施法即編輯」尚無 `TESSpellCastEvent` 實體。A3 favorite UI 已於 `1ac59df`（2026-09-18）實作：Browser＋Palette 共用 `scene-capture-favorites.json`、`[*]` 切換、最愛置頂與 favorites only，規格見 [docs/favorites.md](docs/favorites.md)，`favorites_tests` 離線通過；**尚無實機驗收記錄**。
 - **PROTEUS clone 的 ref 是 dynamic**：`npcRoles[].actorRef` 需要耐久 ref id，dynamic ref 沒有。PROTEUS 已降為**可選**（預設走 ModForge 直接生的「大眾臉」NPC，ref 耐久），故不阻塞；見 [spec](../ModForge/workflows/specs/ingame-scene-export-design.md)「NPC 來源」。
 - **§B 語意標記 / §D role tag / §E 滴管·範圍吸取·橡皮擦**：UI 骨架（`src/UI.cpp`）已接上 SKSE Menu Framework，剩下的是把這些工具畫進面板。
 
