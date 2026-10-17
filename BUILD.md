@@ -62,8 +62,10 @@ scripts/deploy.sh             # 建完之後跑這個。不要手打 cp。
 ## Manjaro（clang-cl 跨編譯，唯一支援的建置與出貨路徑）
 
 ```bash
-cmake --preset build-release-clang-cl-linux && cmake --build build/release-clang-cl-linux
+cmake --fresh --preset build-release-clang-cl-linux && cmake --build build/release-clang-cl-linux
 ```
+
+`--fresh` 不可省略：preset 以裸名 `clang-cl` 指定編譯器，第二次 configure 時 cache 中的絕對路徑與裸名不等，CMake 會中途重跑 configure 並失去 xwin toolchain 的 include／libpath，報 `Check for working CXX compiler: /usr/bin/clang-cl - broken`（2026-10-17 deploy 線實測；agent-bridge 1cae100 同款修正）。
 
 ## 驗證 standalone
 
