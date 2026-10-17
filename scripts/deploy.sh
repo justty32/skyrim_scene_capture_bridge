@@ -41,10 +41,12 @@ TARGETS=(
 # tool call whose command line happens to contain the literal "SkyrimSE.exe", pgrep -f
 # matched the CALLER and this script refused to deploy with nothing running. The
 # `[S]kyrimSE\.exe` bracket trick does not help either: the caller's command line
-# contains that literal too. The checker compares `ps -eo comm=` (the kernel's exe name,
-# not the command line) and also looks for the target file being mmap'd by a live
-# process, which is the actual dangerous condition. See its header, and
-# ../../agentctl/docs/resource-locks.md "pgrep 自我匹配陷阱".
+# contains that literal too. Since 2026-09-05 the checker's primary signal is the mapped
+# file paths in /proc/*/maps (SkyrimSE.exe / skse64_loader.exe / ModOrganizer.exe):
+# `ps -eo comm=` is NOT reliable under Proton (MO2 shows as `main`, SkyrimSE as `Main`).
+# It also looks for the target file being mmap'd by a live process, which is the actual
+# dangerous condition. See its header, and ../../agentctl/docs/resource-locks.md
+# "CPU 限流" (pgrep self-match notes).
 CHECKER="$(dirname "$0")/check_game_running.sh"
 running="$("$CHECKER" "${TARGETS[@]}" || true)"
 game_hits="$(grep '^GAME' <<<"$running" || true)"
