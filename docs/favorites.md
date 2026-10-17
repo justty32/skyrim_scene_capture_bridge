@@ -2,7 +2,7 @@
 
 ← [README](../README.md)｜契約權威（場景匯出）：[ingame-scene-export-design.md](../../ModForge/workflows/specs/ingame-scene-export-design.md)
 
-**需求原文只有一行**：「A3 favorite UI（加入最愛語意、星號／置頂）也尚無實體」（[README.md:193](../README.md)）。
+**需求原文只有一行**：「A3 favorite UI（加入最愛語意、星號／置頂）也尚無實體」（[README §尚未做](../README.md#尚未做依-spec-里程碑)；原為 README.md:193）。
 外部 spec **沒有提到 favorite**（2026-09-18 對 387 行全文查證，零命中），所以作用對象、持久化、取消與排序
 全是本規格第一次定下來的——底下每一條都標了理由，好翻案。
 
