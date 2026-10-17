@@ -43,6 +43,37 @@ ctest --test-dir build/portable-tests-mingw --output-on-failure
 測試有自己的 `tests/vcpkg.json`，只安裝 `nlohmann-json`，不會為 portable test 拉
 CommonLibSSE/DirectXTK。
 
+### Linux 上跑 portable tests（家用 Manjaro 實際用的兩條）
+
+原生 g++（最快，`docs/favorites.md` 也用這個目錄）：
+
+```bash
+: "${VCPKG_ROOT:?set VCPKG_ROOT to your vcpkg checkout}"
+cmake -S tests -B build/tests-native -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+cmake --build build/tests-native
+ctest --test-dir build/tests-native --output-on-failure
+```
+
+MinGW 交叉編譯＋wine 執行 `.exe`（驗 Windows ABI 下的 parser）。三個旗標缺一不可：
+`CMAKE_SYSTEM_NAME=Windows`；`VCPKG_APPLOCAL_DEPS=OFF`（否則 link 後去叫
+`powershell.exe`，exit 127）；靜態連結 libgcc/libstdc++（否則 wine 下找不到
+`libstdc++-6.dll`，三條測試全 FAIL）：
+
+```bash
+cmake -S tests -B build/portable-tests-mingw -G Ninja \
+  -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
+  -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+  -DVCPKG_TARGET_TRIPLET=x64-mingw-static -DVCPKG_APPLOCAL_DEPS=OFF \
+  "-DCMAKE_EXE_LINKER_FLAGS=-static -static-libgcc -static-libstdc++"
+cmake --build build/portable-tests-mingw
+ctest --test-dir build/portable-tests-mingw --output-on-failure
+```
+
+2026-10-17 兩條都是 3/3 PASS（`catalog_file_tests`、`modforge_catalog_contract`、
+`favorites_tests`）。在 worktree 或別處 checkout 跑時，sibling ModForge 不在
+`../../ModForge` 就加 `-DMODFORGE_ROOT=<path>`。
+
 同一個 CTest configure 若偵測到 `dotnet` 與 sibling `../ModForge`，會另外註冊
 `modforge_catalog_contract`。它不是手抄 fixture：測試會呼叫真實 ModForge CLI，先由
 兩份最小 spec 生成一個 full `.esp` 與一個 light `.esl`，再跑 `catalog build`／
