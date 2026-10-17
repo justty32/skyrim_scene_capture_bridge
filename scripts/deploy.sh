@@ -20,20 +20,50 @@
 #
 # Even so: deploying under a running game means the game is running code that no
 # longer matches any file on disk. We refuse by default; --force only if you know why.
+#
+# Usage: scripts/deploy.sh [--dry-run] [--force] [SRC_DLL]
+#   --dry-run  run every check and print what would be written; write nothing.
+#   --force    deploy even while the game is running (tmp+rename path).
+#   SRC_DLL    defaults to build/release-clang-cl-linux/SceneCaptureBridge.dll.
+# The old positional form `deploy.sh SRC --force` still works.
+# Exit: 0 ok; 1 bad input / missing target; 2 refused because the game is running.
 set -euo pipefail
 
 MODS="${MODFORGE_MO2_MODS:-$HOME/games/mod-organizer-2-skyrimspecialedition/modorganizer2/mods}"
-SRC="${1:-$(dirname "$0")/../build/release-clang-cl-linux/SceneCaptureBridge.dll}"
-FORCE="${2:-}"
+SRC=""
+FORCE=""
+DRY_RUN=0
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=1 ;;
+        --force)   FORCE="--force" ;;
+        -h|--help) sed -n '24,29p' "$0"; exit 0 ;;
+        -*)        echo "deploy: unknown option $arg" >&2; exit 1 ;;
+        *)         [[ -z "$SRC" ]] || { echo "deploy: more than one SRC given" >&2; exit 1; }
+                   SRC="$arg" ;;
+    esac
+done
+SRC="${SRC:-$(dirname "$0")/../build/release-clang-cl-linux/SceneCaptureBridge.dll}"
 
-# The folder WITH the esp is the one the game actually loads; the "Release" one is a
-# staging copy. Keep both in step so a reinstall can't silently revert one.
+# Only the folder WITH the esp (the one in modpack-main's modlist.txt as
+# +SceneCaptureBridge) is a target. The old second target "SceneCaptureBridge Release/"
+# no longer exists (checked 2026-10-17) and `mkdir -p` re-created it as an
+# empty mods/ dir, which MO2 then auto-adds to the modlist. So: never create mod
+# folders here. If a target's mod folder is missing, that's a setup error -> exit 1.
 TARGETS=(
     "$MODS/SceneCaptureBridge/SKSE/Plugins/SceneCaptureBridge.dll"
-    "$MODS/SceneCaptureBridge Release/SKSE/Plugins/SceneCaptureBridge.dll"
 )
 
 [[ -f "$SRC" ]] || { echo "deploy: no DLL at $SRC (build first)" >&2; exit 1; }
+[[ -d "$MODS" ]] || { echo "deploy: MO2 mods dir not found: $MODS (set MODFORGE_MO2_MODS)" >&2; exit 1; }
+for t in "${TARGETS[@]}"; do
+    mod_dir="${t%/SKSE/Plugins/*}"
+    if [[ ! -d "$mod_dir" ]]; then
+        echo "deploy: target mod folder does not exist: $mod_dir" >&2
+        echo "        refusing to create it (MO2 would auto-add an empty mod). Install the mod first." >&2
+        exit 1
+    fi
+done
 
 # Detection lives in scripts/check_game_running.sh, called as a SEPARATE process on
 # purpose. `pgrep -f` used to be inlined here and it scans full command lines — including
@@ -75,7 +105,18 @@ elif [[ -n "$mo2_hits" ]]; then
 fi
 
 crc=$(python3 -c "import zlib,sys;print('%08x'%(zlib.crc32(open(sys.argv[1],'rb').read())&0xffffffff))" "$SRC")
+if (( DRY_RUN )); then
+    echo "deploy: --dry-run — nothing written. Would deploy $SRC (crc32 $crc) to:"
+    for t in "${TARGETS[@]}"; do
+        if [[ -f "$t" ]]; then state="replace (current $(stat -c '%s bytes, %y' "$t"))"
+        elif [[ -d "$(dirname "$t")" ]]; then state="new file"
+        else state="new file + create SKSE/Plugins/ inside existing mod folder"; fi
+        echo "deploy:   $t — $state"
+    done
+    exit 0
+fi
 for t in "${TARGETS[@]}"; do
+    # Only SKSE/Plugins/ inside an already-existing mod folder may be created.
     mkdir -p "$(dirname "$t")"
     cp "$SRC" "$t.tmp"     # write a NEW inode
     mv -f "$t.tmp" "$t"    # rename(2): atomic swap, never touches the old inode's pages
