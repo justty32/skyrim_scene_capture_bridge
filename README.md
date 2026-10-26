@@ -49,3 +49,7 @@
 ## 里程碑對位（spec §最小垂直切片）
 
 本 repo負責 **M4（採集橋 spike）→ M6**。M0–M2（ModForge 側 `SceneImport` + `SceneNpcRoleSpec`，手寫 scene.json 即可驗）是 ModForge 本命工作、離線可測，**不依賴本 DLL**——兩線並行。
+
+## 第三方依賴
+
+- [extern/SKSEMenuFramework/README.md](extern/SKSEMenuFramework/README.md)：vendored 的 SKSE Menu Framework（上游文件，不在本 repo 維護）。
