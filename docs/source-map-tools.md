@@ -2,6 +2,7 @@
 
 ← [README](../README.md)（本頁 2026-10-17 自 README 拆出，內容未改寫）｜前半：[source-map.md](source-map.md)
 
+<!-- wf-nav -->
 | 檔 | 內容 |
 |---|---|
 | `Aim.{h,cpp}` | 共用視角射線：`LookHit()`／`RayRef()` 保留 player-facing 老手感；placement-only `RenderedCameraHit()` 從最終 NiCamera 射出，讓 ghost／gh0 direct placement 對齊第一／第三人稱與 SmoothCam。它的 broad collector 明確略過 player 與 live/sentinel ghost，避免每幀 follow 自我命中；已提交 real ref 仍是普通可瞄 world surface。**射線絕不做自動 fallback**（使用者拍板 2026-07-11）——牆/地板都是 ref，自動 fallback 會把「按空」變誤抓；射線只走明示按鈕/專用鍵 |

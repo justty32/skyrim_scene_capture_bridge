@@ -2,6 +2,7 @@
 
 ← [README](../README.md)（本頁 2026-10-17 自 README 拆出，內容未改寫）｜其餘模組：[source-map-tools.md](source-map-tools.md)
 
+<!-- wf-nav -->
 | 檔 | 內容 |
 |---|---|
 | `plugin.cpp` | SKSE 入口 + message handler；input sink **兩層**：編輯模式內部鍵 → 當前模式動作鍵（sink 形狀抄 my_skyrim_plugin_1 的 `FollowLight::HotkeySink`）。**沒有抓鍵層**了——改鍵走 ini。**numpad 重複按住**：`IsDown` → `Editor::HandleKey` / `Modes::HandleKey`（單按一步；動作鍵與 commit **必須單發**）；`IsHeld` → `Editor::HandleHold(code, HeldDuration())` **僅編輯模式** |

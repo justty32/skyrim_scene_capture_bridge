@@ -6,6 +6,7 @@
 
 **唯一 net-new 的重工程**：一支 SKSE C++ DLL，在遊戲內走訪目標 cell 的 placed refs、讀每個 base + world transform + enable state、把 runtime FormID 反解成耐久 `<plugin>:0xLOCALID`，序列化成 **scene.json** → 餵 ModForge（`dotnet run -- build scene.json`）生成 patch esp。
 
+<!-- wf-nav -->
 - **類型**：基石聯動（它的 output 契約 = ModForge 的 input；兩者靠 scene.json 協議接，不整合）
 - **契約權威**：scene.json 的每個欄位對映**既有 ModForge spec 型別**，本 repo **只擁有 output 形狀**，生成端全在 ModForge。契約定義見 [spec §契約](../ModForge/workflows/specs/ingame-scene-export-design.md)。
 - **建置**：[BUILD.md](BUILD.md)（C++23 + CommonLibSSE-NG + vcpkg + CMake presets；靜態 CRT standalone DLL）
@@ -32,7 +33,7 @@
 | 持久化與 adopt 語意 | [docs/persistence.md](docs/persistence.md) |
 | 最愛（A3）規格 | [docs/favorites.md](docs/favorites.md) |
 | ghost 調查（`docs/investigations/`） | [spin 2026-08-25](docs/investigations/GHOST_SPIN_INVESTIGATION_2026-08-25.md)、[cell clear 2026-08-26](docs/investigations/GHOST_CELL_CLEAR_INVESTIGATION_2026-08-26.md) |
-| 建置、測試、部署、建置踩坑 | [BUILD.md](BUILD.md)、[docs/portable-tests.md](docs/portable-tests.md) |
+| 建置、測試、部署、建置踩坑 | [BUILD.md](BUILD.md)、[docs/deployment.md](docs/deployment.md)、[docs/portable-tests.md](docs/portable-tests.md) |
 
 ## 狀態
 
