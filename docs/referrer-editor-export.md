@@ -1,7 +1,7 @@
 # 操作模型（續）：referrer、編輯子模式、匯出
 
-← [README](../README.md)（本頁 2026-10-17 自 README 拆出，內容未改寫）｜前半：[操作模型](operation-model.md)
-**`sc ref` ＝ referrer：命名一個既有 ref（2026-07-12，DLL 端補齊；ModForge 消費端 `adc419b` 已在）**。三兄弟並列——`removals[]` **擦掉**既有、`overrides[]` **移動**既有、`references[]` **命名**既有。referrer **什麼都不動**（不新建、不改 transform、不 disable），只記「這個 ref 的身份 ＋ 一個自由 label」，匯出成頂層 `references[]`；ModForge 把 **label 註冊成可解析的名字**，於是 spec 裡**任何 ref 欄位**都能寫它（package 的 `sandbox.location`／`travel.place`、quest alias `forced:`、`linkedRefs`、`enableParent`、objective target、script Form prop）。典型用法：指一張椅子標「sofia's chair」→ Sofia 的 sandbox package 就錨在那張椅子。
+← [README](../README.md)｜前半：[操作模型](operation-model.md)
+**`sc ref` ＝ referrer：命名一個既有 ref**。三兄弟並列——`removals[]` **擦掉**既有、`overrides[]` **移動**既有、`references[]` **命名**既有。referrer **什麼都不動**（不新建、不改 transform、不 disable），只記「這個 ref 的身份 ＋ 一個自由 label」，匯出成頂層 `references[]`；ModForge 把 **label 註冊成可解析的名字**，於是 spec 裡**任何 ref 欄位**都能寫它（package 的 `sandbox.location`／`travel.place`、quest alias `forced:`、`linkedRefs`、`enableParent`、objective target、script Form prop）。典型用法：指一張椅子標「sofia's chair」→ Sofia 的 sandbox package 就錨在那張椅子。
 
 目標分兩類，**語意完全不同**：
 
@@ -26,9 +26,9 @@
 
 Export 頁有 **Export player cell**、**Export all (loaded cells)**、**Export captures** 與 **Export requires** 四鈕：registries（marker/擦除/override）本就全 cell 全域，`all` 只多掃**已載入的其他 cell** 的 placements（未載入 cell 的 placements 撈不到，log 會講）。Palette 頁的具名檔有三鈕：**load from file (append)**（載入的插槽**疊在列表最上面**，保留檔內順序）／**replace from file**（**清掉現有插槽**再載入；檔案不存在或無可用插槽＝什麼都不動，不會誤清）／**save to file**。**檔內順序＝面板順序**（最上面那筆排第一），所以 json 讀起來就是你在面板看到的樣子。
 
-另有 **clear all slots**（2026-07-12）＝**清空整個 palette**。插槽是**落盤跨存檔**的（不像擦除/override 那樣是可 revert 的存檔狀態）——清掉＝丟掉別的 playthrough 攢的東西，所以**兩道防呆**：① 按下去先變成 `really clear all N slot(s)?` ＋ `yes, clear` / `cancel`，要**再按一次**才真的清；② 清完出現 **`undo clear`**（本次 session 有效，按了整批回來、並重寫回磁碟）。想留備份就先按 `save to file`。
+另有 **clear all slots**＝**清空整個 palette**。插槽是**落盤跨存檔**的（不像擦除/override 那樣是可 revert 的存檔狀態）——清掉＝丟掉別的 playthrough 攢的東西，所以**兩道防呆**：① 按下去先變成 `really clear all N slot(s)?` ＋ `yes, clear` / `cancel`，要**再按一次**才真的清；② 清完出現 **`undo clear`**（本次 session 有效，按了整批回來、並重寫回磁碟）。想留備份就先按 `save to file`。
 
-**匯出檔名（2026-07-12 起，每次一個新檔、永不覆蓋）**：
+**匯出檔名（每次一個新檔、永不覆蓋）**：
 
 | 鈕 | 檔名 | 內容 |
 |---|---|---|

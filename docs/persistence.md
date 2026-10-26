@@ -1,13 +1,13 @@
-# 持久化與 adopt 語意（P5 co-save 後全面升級）
+# 持久化與 adopt 語意
 
-← [README](../README.md)（本頁 2026-10-17 自 README 拆出，內容未改寫）
+← [README](../README.md)
 
-DLL 有兩層狀態，**P5 起兩層都隨存檔走**：
+DLL 有兩層狀態，**兩層都隨存檔走**：
 
-1. **存檔（savegame）**：所有實際操作本來就持久——擺的動態 ref（`0xFF......`）連同 transform、擦除的 `Disable()` 狀態、marker proxy 連同顯示名。2026-07-11 實機確認。
-2. **登記簿 → SKSE co-save（`CoSave.cpp`）**：Markers（**含 note**）/Eraser/Overrides 三本登記簿＋設定（模式/鍵位/dp 狀態）以 UID `'SCBR'` 掛在**每個存檔**旁，讀檔自動跟回來——**關遊戲重開不再歸零**。讀一個沒有我們記錄的存檔＝乾淨預設（revert 先清）。
+1. **存檔（savegame）**：所有實際操作持久化——擺的動態 ref（`0xFF......`）連同 transform、擦除的 `Disable()` 狀態、marker proxy 連同顯示名。
+2. **登記簿 → SKSE co-save（`CoSave.cpp`）**：Markers（**含 note**）/Eraser/Overrides 三本登記簿＋設定（模式/鍵位/dp 狀態）以 UID `'SCBR'` 掛在**每個存檔**旁，讀檔自動跟回來——**關遊戲重開仍會還原**。讀一個沒有我們記錄的存檔＝乾淨預設（revert 先清）。
 
-匯出的 vanilla diff 判別依舊無狀態（ref 解得出來源檔 ⇒ authored 跳過；解不出 ⇒ 玩家放的）。co-save 後的持久化對照：
+匯出的 vanilla diff 判別依舊無狀態（ref 解得出來源檔 ⇒ authored 跳過；解不出 ⇒ 玩家放的）。持久化對照：
 
 <!-- wf-nav -->
 | 東西 | 誰記得 | 重開遊戲後匯出 |
@@ -24,6 +24,6 @@ DLL 有兩層狀態，**P5 起兩層都隨存檔走**：
 | 模式/dp 狀態 ＋ **物理/extra-data 開關** | **co-save**（SETT **v7**） | 隨存檔還原（v≤5 舊存檔＝預設：place py1、edit py0、extra data 全關） |
 | **動作鍵** | **`SceneCaptureBridge.ini`**（磁碟，SKSE 資料夾）＋ co-save（SETT v7，仍照寫照讀） | **ini 贏**：ini 有寫的模式一律吃 ini，存檔裡的值只進 log；ini 沒寫的才吃存檔（再沒有就 F11）。ini 天生跨存檔跨 session |
 
-**adopt 降級為救援機制**：marker 的 `adopt this cell` 現在讀檔會**自動跑一次**（掃當前 cell），只有跨到別的 cell 才需手動按。擦除的 `scan disabled refs` 已整個移除——co-save 存的是耐久 id，重解析穩定，跨存檔救援冗餘。真要**換一個存檔**撿另一條時間線的 marker，走 Markers 頁 `adopt this cell`。
+**adopt 是救援機制**：marker 的 `adopt this cell` 讀檔會**自動跑一次**（掃當前 cell），只有跨到別的 cell 才需手動按。不提供擦除的 `scan disabled refs`——co-save 存的是耐久 id，重解析穩定，跨存檔救援冗餘。真要**換一個存檔**撿另一條時間線的 marker，走 Markers 頁 `adopt this cell`。
 
-**2026-07-11 實機驗收**：F11 準星放置（pitch 正確）、F8 擦除/undo、F6/F7 滴管（含姿態）、numpad 編輯（5 選/3 升/0 commit/. 取消還原；編輯中 log 出現的 unmapped `0x11`/`0x1F`/`0x20`/`0x38` 是 WASD/Alt，非 numpad 問題）、物理凍結→commit→沉降（匯出為沉降後姿態）、F10 匯出→ModForge build→esp 閉環（removals 深埋 Z-30000、Tamriel override 自動帶 TopCell、ESL）。
+編輯時 log 的 unmapped `0x11`/`0x1F`/`0x20`/`0x38` 是 WASD/Alt，非 numpad 問題。物理放開後以沉降後姿態匯出；ModForge build 的 removals 深埋 Z-30000，Tamriel override 自動帶 TopCell，支援 ESL。

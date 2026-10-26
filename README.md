@@ -2,7 +2,7 @@
 
 ← 契約權威：[ingame-scene-export-design.md](../ModForge/workflows/specs/ingame-scene-export-design.md)｜idea：[#24 遊戲內編輯器](../ModForge/workflows/idea/tools/24-ingame-editor.md)
 
-> **獨立 repo**（2026-08-02 自 ModForge `sub_projs/scene-capture-bridge` 抽出，未帶舊 commit 歷史）。文中 `../ModForge/…` 這類連結，前提是兩個 repo **同層 clone 在同一個父目錄下**（本機為 `~/repo/moddings/skyrim/projects/`）。
+> **獨立 repo**。文中 `../ModForge/…` 這類連結，前提是兩個 repo **同層 clone 在同一個父目錄下**（本機為 `~/repo/moddings/skyrim/projects/`）。
 
 **唯一 net-new 的重工程**：一支 SKSE C++ DLL，在遊戲內走訪目標 cell 的 placed refs、讀每個 base + world transform + enable state、把 runtime FormID 反解成耐久 `<plugin>:0xLOCALID`，序列化成 **scene.json** → 餵 ModForge（`dotnet run -- build scene.json`）生成 patch esp。
 
@@ -17,7 +17,7 @@
 
 改編自 [justty32/my_skyrim_plugin_1](https://github.com/justty32/my_skyrim_plugin_1) 的**建置骨架**（CMake/vcpkg/presets/CI/triplet overlay/靜態 CRT/clang-cl 跨編譯），**只借建置架構，plugin 邏輯全自寫**（依契約寫，不照抄內部程式碼）。關鍵沿用：
 - `commonlibsse-ng-fork`（Monitor221hz vcpkg registry）+ **`nlohmann-json`**（scene.json 序列化）。
-- `build-release-clang-cl-linux` preset → **唯一受支援的建置與出貨路徑**（Manjaro clang-cl + xwin，產物已實機驗證）。Windows/MSVC CI 於 2026-08-07 放棄。
+- `build-release-clang-cl-linux` preset → **唯一受支援的建置與出貨路徑**（Manjaro clang-cl + xwin，產物已實機驗證）。不維護 Windows/MSVC CI。
 
 ## 文件地圖
 

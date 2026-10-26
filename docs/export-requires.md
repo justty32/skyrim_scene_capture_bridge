@@ -1,6 +1,6 @@
 # Export requires — 「這個 esp 會需要哪些 mod？」在**遊戲內**就問得到
 
-← [README](../README.md)（本頁 2026-10-17 自 README 拆出，內容未改寫）
+← [README](../README.md)
 
 `sc capp` 吸一個玩家分身，就會把「給過你法術/perk/裝備的每一個 mod」變成 esp 的 **master**；缺 master 時 Skyrim **靜默不載**這個 esp（不報錯、log 也沒有，記錄就是不在）。ModForge C# 端 build 完會印同一份分析（＋`<plugin>.requires.txt` 旁檔，[Generator.Dependencies.cs](../../ModForge/src/ModForge.Core/Generator.Dependencies.cs)）——但**那時你已經退出遊戲了**。這顆鈕把同一個問題**提前到匯出當下**：你人還站在那間房，覺得那顆 PROTEUS 法術不值得讓整個 mod 變成硬相依，重吸一次就好。
 

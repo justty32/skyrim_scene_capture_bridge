@@ -1,6 +1,6 @@
 # Portable tests（MinGW／Linux，非 DLL build）
 
-← [BUILD.md](../BUILD.md)（本頁 2026-10-17 自 BUILD.md 拆出，內容未改寫）
+← [BUILD.md](../BUILD.md)
 
 ## Windows（MinGW）
 
@@ -51,8 +51,8 @@ cmake --build build/portable-tests-mingw
 ctest --test-dir build/portable-tests-mingw --output-on-failure
 ```
 
-2026-10-17 兩條都是 3/3 PASS（`catalog_file_tests`、`modforge_catalog_contract`、
-`favorites_tests`）。在 worktree 或別處 checkout 跑時，sibling ModForge 不在
+測試 target 為 `catalog_file_tests`、`modforge_catalog_contract`、`favorites_tests`。
+在 worktree 或別處 checkout 跑時，sibling ModForge 不在
 `../../ModForge` 就加 `-DMODFORGE_ROOT=<path>`。
 
 同一個 CTest configure 若偵測到 `dotnet` 與 sibling `../ModForge`，會另外註冊

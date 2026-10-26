@@ -2,9 +2,8 @@
 
 ← [README](../README.md)｜契約權威（場景匯出）：[ingame-scene-export-design.md](../../ModForge/workflows/specs/ingame-scene-export-design.md)
 
-**需求原文只有一行**：「A3 favorite UI（加入最愛語意、星號／置頂）也尚無實體」（[README §尚未做](../README.md#尚未做依-spec-里程碑)；原為 README.md:193）。
-外部 spec **沒有提到 favorite**（2026-09-18 對 387 行全文查證，零命中），所以作用對象、持久化、取消與排序
-全是本規格第一次定下來的——底下每一條都標了理由，好翻案。
+**需求原文只有一行**：「A3 favorite UI（加入最愛語意、星號／置頂）也尚無實體」（[README §尚未做](../README.md#尚未做依-spec-里程碑)）。
+作用對象、持久化、取消與排序以本規格為準；favorite 不擴充場景匯出契約。
 
 ## 作用對象：Browser 與 Palette **共用一份**，鍵是耐久 base id
 
@@ -25,20 +24,15 @@ scene-capture-favorites.json  ──┬──► Browser 列：星號欄 + 「fa
 
 **已知且刻意接受的後果**：palette 裡兩個 baseId 相同、只有姿態不同的插槽會**一起**變成最愛。
 這是「我喜歡這個桶子」而不是「我喜歡這個插槽」的語意——對一個挑選輔助功能，這是對的那一邊。
-要改成 per-slot 就得給插槽一個穩定 id（現在插槽的身份是 `index`，會因刪除而位移），成本高出一個量級。
+插槽的身份是 `index`，會因刪除而位移；本規格不使用 per-slot 最愛。
 
 ## 存哪：自己的 JSON，不進 co-save
-
-| | co-save（`'SCCP'` 等） | JSON（`scene-capture-palette.json`）|
-|---|---|---|
-| 綁定 | 存檔 | 磁碟，跨存檔跨 playthrough |
-| 加欄位 | **要動版本號** + `if (version >= N)` 讀分支 | `item.value(key, default)` 天生向後相容 |
 
 最愛跟 palette 同性質——**它是「我這個人的偏好」，不是「這個 playthrough 的狀態」**，
 換存檔、開新檔都應該還在。所以走 JSON，落在 `SKSE::log::log_directory()`，
 與 `scene-capture-palette.json` 及匯出檔同層（比照 [Palette.cpp:31](../src/Palette.cpp) 的 `StorePath()`）。
 
-**不動任何 co-save record，不動任何版本號**——這也是本功能風險最低的原因。
+**不動任何 co-save record，不動任何版本號**。
 
 ```json
 { "contract": "scene-capture-favorites/1",
@@ -62,14 +56,13 @@ scene-capture-favorites.json  ──┬──► Browser 列：星號欄 + 「fa
 `scene.json` 的頂層欄位（`placements[]`／`removals[]`／`overrides[]`／`annotations[]`／
 `references[]`／`capturedItems[]`／`capturedNpcs[]`）**一個都不動**，`SceneExporter*` 一行都不碰。
 
-理由：favorite 是**操作期的挑選狀態**，不是場景語意。把它寫進 `scene.json` 等於單方面擴充 ModForge 的
-輸入契約，逼下游決定要不要吃——換來的價值是零（ModForge 不會因為你喜歡某個桶子而生出不同的 esp）。
+favorite 是**操作期的挑選狀態**，不是場景語意，不寫進 `scene.json`。
 若日後真要，照 `removals[]` 的 shorthand-collapse 慣例（[SceneExporter.Registries.cpp:24](../src/SceneExporter.Registries.cpp)）加，
 但那必須先在外部 spec 登記。
 
 ## 實作落點
 
-新增一支**不依賴 SKSE/CommonLib 的** `src/Favorites.{h,cpp}`——這是刻意的，比照 `CatalogFile.cpp`：
+`src/Favorites.{h,cpp}` **不依賴 SKSE/CommonLib**，比照 `CatalogFile.cpp`：
 
 ```
 bool   Contains(id)          // 查
@@ -94,7 +87,7 @@ UI 接法：
 
 ## 驗證（不開遊戲）
 
-新增 `tests/FavoritesTests.cpp`，target `favorites_tests`，掛進既有 CTest：
+`tests/FavoritesTests.cpp` 的 target 是 `favorites_tests`，使用既有 CTest：
 
 ```
 ctest --test-dir build/tests-native --output-on-failure

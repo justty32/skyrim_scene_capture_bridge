@@ -6,20 +6,15 @@ SKSE plugin (C++23, CommonLibSSE-NG). Build architecture adapted from
 
 ## 先決條件
 
-- **受支援的建置路徑只有 Linux (Manjaro)**：clang-cl + lld-link + [xwin](https://github.com/Jake-Shadle/xwin)（`xwin --accept-license splat --output ~/.xwin-cache`）+ vcpkg（`VCPKG_ROOT`）。2026-07-10 實測此路徑的產物在遊戲內載入正常（`skse64.log`：`plugin SceneCaptureBridge.dll (...) loaded correctly`；import 表只有 KERNEL32/ole32/VERSION/USER32/SHELL32，靜態 CRT 無 vcredist 相依），因此同時作為編譯驗證與實際出貨路徑。
-- **Windows/MSVC CI 已於 2026-08-07 放棄**：家用與實機環境均為 Linux + Proton，不再為 Windows-only vcpkg/MSVC 相容性升級依賴或維護 workflow。
+- **受支援的建置路徑只有 Linux (Manjaro)**：clang-cl + lld-link + [xwin](https://github.com/Jake-Shadle/xwin)（`xwin --accept-license splat --output ~/.xwin-cache`）+ vcpkg（`VCPKG_ROOT`）。此路徑同時用於編譯驗證與實際出貨；產物須在 `skse64.log` 顯示 `plugin SceneCaptureBridge.dll (...) loaded correctly`，並通過下方 standalone 檢查。
+- **不維護 Windows/MSVC CI**：家用與實機環境均為 Linux + Proton，不再為 Windows-only vcpkg/MSVC 相容性升級依賴或維護 workflow。
 - **必要 overlay**：`ports/`（`commonlibsse-ng-fork` 的 `fix-clang-delete.patch` 是 clang-cl 編 CommonLibSSE-NG 的必要修補；`directxtk` 的 registry 版在 `x64-windows-skse-clang` 下編不過）。`CMakeLists.txt` 需 `find_package(directxtk CONFIG REQUIRED)`。
 - **改過 preset / `vcpkg.json` 後必須 `rm -rf build/release-clang-cl-linux`**：stale `CMakeCache.txt` 會讓 `vcpkg.cmake` 跳過 chainload toolchain，clang-cl 就不帶 `/winsysroot`，錯誤訊息長得像「編譯器壞了」。
 - deps 由 vcpkg manifest 拉：`commonlibsse-ng-fork`（Monitor221hz registry）+ `nlohmann-json`。
 
 ## Windows（MSVC，不再支援）
 
-```powershell
-cmake --preset build-release-msvc; if ($?) { cmake --build build/release-msvc }
-```
-
-產出 `build/release-msvc/SceneCaptureBridge.dll`（靜態 CRT，不依賴 vcredist）。
-Debug 把 `release-msvc` 換 `debug-msvc`。改過 `vcpkg.json` / triplet → 先 `Remove-Item -Recurse -Force build` 再 configure（避免舊 CRT cache 的 LNK2038）。
+Windows/MSVC 不屬於受支援的 DLL 建置與出貨路徑；請用下方 Manjaro 指令。
 
 ## Portable tests（MinGW／Linux，非 DLL build）
 
@@ -54,14 +49,14 @@ build/tests-native/catalog_compatibility_probe /path/to/scene-catalog.json /path
 cmake --fresh --preset build-release-clang-cl-linux && cmake --build build/release-clang-cl-linux
 ```
 
-`--fresh` 不可省略：preset 以裸名 `clang-cl` 指定編譯器，第二次 configure 時 cache 中的絕對路徑與裸名不等，CMake 會中途重跑 configure 並失去 xwin toolchain 的 include／libpath，報 `Check for working CXX compiler: /usr/bin/clang-cl - broken`（2026-10-17 deploy 線實測；agent-bridge 1cae100 同款修正）。
+`--fresh` 不可省略：preset 以裸名 `clang-cl` 指定編譯器，第二次 configure 時 cache 中的絕對路徑與裸名不等，CMake 會中途重跑 configure 並失去 xwin toolchain 的 include／libpath，報 `Check for working CXX compiler: /usr/bin/clang-cl - broken`。
 
 ## 驗證 standalone
 
 ```bash
 llvm-readobj --coff-imports build/release-clang-cl-linux/SceneCaptureBridge.dll
 ```
-不該出現 `MSVCP140.dll` / `VCRUNTIME140*.dll`（出現 → 砍 `build/` 重來）。2026-09-05 實測 import 表只有 `KERNEL32.dll`／`ole32.dll`／`SHELL32.dll`／`USER32.dll`／`VERSION.dll`，`MSVCP`／`VCRUNTIME` 命中數為 0。
+不該出現 `MSVCP140.dll` / `VCRUNTIME140*.dll`（出現 → 砍 `build/` 重來）。已驗證產物的 import 表只有 `KERNEL32.dll`／`ole32.dll`／`SHELL32.dll`／`USER32.dll`／`VERSION.dll`，`MSVCP`／`VCRUNTIME` 命中數為 0。
 
 ## 打包（MO2 zip）
 
@@ -79,7 +74,7 @@ scripts/test_game_detection.sh        # 部署守門的偵測契約測試（fixt
 
 無 clang-cl/xwin/vcpkg 的機器**不能編譯**——只能寫碼，實際 build-verify 留給具備 Linux 交叉編譯環境的機器。
 
-## 建置踩坑（2026-07-10 首編；2026-10-17 自 README 移入）
+## 建置踩坑
 
 - **`ports/` overlay 必須存在**。`CMakePresets.json` 的 `vcpkg-clang-linux` 指向 `${sourceDir}/ports`；`commonlibsse-ng-fork/fix-clang-delete.patch` 是 clang-cl 編 CommonLibSSE-NG 的**必要**修補，`directxtk` 也得走 overlay（registry 版在 `x64-windows-skse-clang` 下編不過）。從 `my_skyrim_plugin_1/ports/` 整包搬。
 - `CMakeLists.txt` 需 `find_package(directxtk CONFIG REQUIRED)`——CommonLibSSE 的 export target 在 link interface 裡具名 `Microsoft::DirectXTK`。
