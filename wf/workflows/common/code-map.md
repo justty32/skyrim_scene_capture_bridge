@@ -8,7 +8,7 @@
 
 | 領域 | 檔案 | 職責 | 測試在哪 |
 |------|------|------|---------|
-| 離線 catalog | `src/Catalog.*`、`src/CatalogFile.*` | 載入 ModForge `scene-catalog.json`、compatibility gate；`CatalogFile` 為不依賴 SKSE 的 portable parser | `tests/CatalogFileTests.cpp`、`tests/CatalogContractTests.cpp` |
+| 離線 catalog | `src/Catalog.*`、`src/CatalogFile.*` | 載入 ModForge `scene-catalog.json`、compatibility gate；`CatalogFile` 為不依賴 SKSE 的 portable parser | `tests/CatalogFileTests.cpp` |
 | 最愛 | `src/Favorites.*` | Browser／Palette 共用的最愛清單（見 [docs/favorites.md](../../../docs/favorites.md)） | `tests/FavoritesTests.cpp` |
 | scene 匯出 | `src/SceneExporter*.cpp` | 走訪 placed refs，序列化 scene.json | （無；靠遊戲內驗證） |
 | UI | `src/UI*.cpp` | SKSE Menu Framework 面板（F1） | （無；靠遊戲內驗證） |

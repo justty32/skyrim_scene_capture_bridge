@@ -26,7 +26,6 @@
 ## 測試分類
 
 - `fast`：兩支 shell 契約測試；fixture，不需 build、不需遊戲。
-- `contract`：`modforge_catalog_contract`：跨 ModForge CLI 的真實 process 邊界，改 catalog producer／consumer 時跑。
 - `full`：portable C++ tests（`ctest`）。
 - `external`：遊戲內行為與手感；agent 代跑不了的記 WAIT_USER。
 

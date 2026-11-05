@@ -45,7 +45,6 @@
 | `clang-cl`／`cmake`／`ninja` | 交叉編譯 DLL 與 portable tests | 系統套件 |
 | xwin | Windows CRT／SDK splat | `xwin --accept-license splat --output ~/.xwin-cache` |
 | `VCPKG_ROOT` | vcpkg 根目錄（deps：`commonlibsse-ng-fork`、`nlohmann-json`、`directxtk` overlay） | 本機 `~/dev/vcpkg` |
-| `dotnet`＋同層 `ModForge` | `modforge_catalog_contract` 測試的 producer 端 | 缺則該測試跳過／不建（見 `tests/CMakeLists.txt`） |
 
 需要帳號、付費、授權才能取得的：守鐵律 2（授權來源），並在 [WAIT_USER](../../../../WAIT_USER.md) 記一行。
 
