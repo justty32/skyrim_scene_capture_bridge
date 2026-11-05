@@ -179,12 +179,12 @@ namespace CatalogFile {
 
     Compatibility AssessCompatibility(const Document& document,
         const std::vector<RuntimeSource>& runtimePlugins) {
-        std::unordered_set<std::string> sources;
+        std::unordered_map<std::string, const Source*> sources;
         std::vector<bool> seenIndices(document.Sources().size(), false);
         std::vector<std::string> orderedSources(document.Sources().size());
         for (const auto& source : document.Sources()) {
             const auto plugin = Lower(source.plugin);
-            if (!sources.insert(plugin).second)
+            if (!sources.emplace(plugin, &source).second)
                 return {false, "catalog has duplicate source plugin '" + source.plugin + "'"};
             if (source.loadOrderIndex >= seenIndices.size() || seenIndices[source.loadOrderIndex])
                 return {false, "catalog source loadOrderIndex values are not unique and contiguous"};
@@ -203,6 +203,12 @@ namespace CatalogFile {
             if (!sources.contains(Lower(record.sourcePlugin)))
                 return {false, "catalog record sourcePlugin is absent from sources: " +
                     record.sourcePlugin};
+            const auto* source = sources.at(Lower(record.sourcePlugin));
+            // Both fields come from the same producer sources row. Compare the
+            // stored provenance, without interpreting foreign filesystem paths.
+            if (record.sourcePath != source->sourcePath)
+                return {false, "catalog record sourcePath disagrees with sourcePlugin provenance: " +
+                    record.formKey};
         }
 
         std::unordered_set<std::string> runtime;
@@ -210,7 +216,7 @@ namespace CatalogFile {
             if (!runtime.insert(Lower(source.plugin)).second)
                 return {false, "runtime reports duplicate plugin '" + source.plugin + "'"};
         }
-        for (const auto& plugin : sources)
+        for (const auto& [plugin, source] : sources)
             if (!runtime.contains(plugin))
                 return {false, "catalog source is not loaded: " + plugin};
         for (const auto& plugin : runtime)

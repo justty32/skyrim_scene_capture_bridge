@@ -1,5 +1,7 @@
 #include "CatalogFile.h"
 
+#include <nlohmann/json.hpp>
+
 #include <functional>
 #include <fstream>
 #include <iostream>
@@ -201,6 +203,47 @@ namespace {
             std::string::npos, "gapped catalog source order");
     }
 
+    void CompatibilityChecksSourcePathProvenance() {
+        auto json = nlohmann::json::parse(kValid);
+        const std::string originalPath = json["sources"][0]["sourcePath"];
+        for (const auto& path : {std::string("C:/different/CatalogOne.esp"),
+                 std::string("c:/mods/CatalogOne.esp"),
+                 std::string("C:\\mods\\CatalogOne.esp"), std::string("CatalogOne.esp")}) {
+            json["records"][0]["sourcePath"] = path;
+            auto assessment = CatalogFile::AssessCompatibility(Parse(json.dump()),
+                {{"CatalogOne.esp"}});
+            Check(!assessment.compatible && assessment.status.find("sourcePath") !=
+                std::string::npos, "contradictory stored sourcePath rejected");
+        }
+        // Non-native path spelling is valid when both producer fields agree.
+        for (const auto& path : {originalPath, std::string("relative\\CatalogOne.esp")}) {
+            json["sources"][0]["sourcePath"] = path;
+            for (auto& record : json["records"]) record["sourcePath"] = path;
+            json["records"][0]["sourcePlugin"] = "CATALOGONE.ESP";
+            Check(CatalogFile::AssessCompatibility(Parse(json.dump()),
+                {{"catalogone.ESP"}}).compatible, "matching provenance spelling accepted");
+        }
+    }
+
+    void CompatibilityAcceptsOverrideProvenance() {
+        auto json = nlohmann::json::parse(kValid);
+        auto overrideSource = json["sources"][0];
+        overrideSource["plugin"] = "Override.esp";
+        overrideSource["sourcePath"] = "D:/mods/Override.esp";
+        overrideSource["loadOrderIndex"] = 1;
+        json["sources"].push_back(overrideSource);
+        json["records"][0]["sourcePlugin"] = "override.ESP";
+        json["records"][0]["sourcePath"] = "D:/mods/Override.esp";
+        Check(CatalogFile::AssessCompatibility(Parse(json.dump()),
+            {{"CatalogOne.esp"}, {"Override.esp"}}).compatible,
+            "override source may differ from FormKey origin");
+        json["records"][0]["sourcePath"] = "C:/mods/CatalogOne.esp";
+        const auto assessment = CatalogFile::AssessCompatibility(Parse(json.dump()),
+            {{"CatalogOne.esp"}, {"Override.esp"}});
+        Check(!assessment.compatible && assessment.status.find("sourcePath") != std::string::npos,
+            "override path must refer to winner source, not origin");
+    }
+
     void CompatibilityChecksGlobalRuntimeOrder() {
         auto json = std::string(kValid);
         const auto sourceEnd = json.find("  }],\n  \"records\"");
@@ -246,6 +289,8 @@ int main() {
         {"file loading fails soft", FileLoadingFailsSoft},
         {"compatibility requires exact runtime sources", CompatibilityRequiresExactRuntimeSourceSet},
         {"compatibility rejects broken provenance", CompatibilityRejectsBrokenProvenance},
+        {"compatibility checks source path provenance", CompatibilityChecksSourcePathProvenance},
+        {"compatibility accepts override provenance", CompatibilityAcceptsOverrideProvenance},
         {"compatibility checks global runtime order", CompatibilityChecksGlobalRuntimeOrder},
         {"compatibility rejects FormKey origin mismatch", CompatibilityRejectsFormKeyOriginMismatch},
     };
