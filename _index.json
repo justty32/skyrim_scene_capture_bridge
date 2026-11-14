@@ -1,0 +1,53 @@
+{
+  "AGENTS.md": {
+    "description": "agent 專案備忘與最頂層路由；進 repo 先讀這份"
+  },
+  "BUILD.md": {
+    "description": "建置說明（C++23、CommonLibSSE-NG、vcpkg、CMake preset、靜態 CRT）"
+  },
+  "CLAUDE.md": {
+    "description": "指標檔，指向 AGENTS.md"
+  },
+  "CMakeLists.txt": {
+    "description": "CMake 主檔"
+  },
+  "CMakePresets.json": {
+    "description": "CMake preset 設定"
+  },
+  "README.md": {
+    "description": "專案總覽：遊戲內採集橋 SKSE DLL，走訪 cell 的 placed refs 輸出 scene.json 餵 ModForge"
+  },
+  "cmake": {
+    "description": "CMake 輔助檔：來源清單與各 toolchain／triplet 定義"
+  },
+  "docs": {
+    "description": "使用與設計文件（部署、持久化、操作模型、按鍵設定、調查筆記）"
+  },
+  "extern": {
+    "description": "外部原始碼依賴（SKSEMenuFramework）"
+  },
+  "ports": {
+    "description": "vcpkg 自訂 port（CommonLibSSE-NG fork、DirectXTK）"
+  },
+  "scripts": {
+    "description": "部署、打包與遊戲執行偵測腳本"
+  },
+  "src": {
+    "description": "DLL 原始碼（採集、編輯／放置工具、catalog 讀寫）"
+  },
+  "tests": {
+    "description": "單元測試（catalog 檔、收藏）與其 CMake／vcpkg 設定"
+  },
+  "tools-spec.json": {
+    "description": "編輯器工具 esp 的規格，由 ModForge 生成；改工具 esp 內容時進來"
+  },
+  "vcpkg-configuration.json": {
+    "description": "vcpkg registry／baseline 設定"
+  },
+  "vcpkg.json": {
+    "description": "vcpkg 依賴清單"
+  },
+  "wf": {
+    "description": "本 repo 的工作流文檔（INDEX、SESSION-LOG、STRUCTURE、WORKFLOWS 與 workflows/）"
+  }
+}
